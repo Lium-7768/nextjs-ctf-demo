@@ -37,7 +37,7 @@ jobs:
       - name: Install dependencies
         run: |
           if [ -f package.json ]; then
-            npm ci
+            npm install
           fi
 
       - name: Run AI Code Review
