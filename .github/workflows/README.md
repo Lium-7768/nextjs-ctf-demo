@@ -1,4 +1,4 @@
-# AI Code Review - GitHub Actions
+# AI Code Review - GitHub Actions 
 
 这个项目使用 GitHub Actions 和 Claude AI 自动审查 Pull Requests 中的代码变更。
 
