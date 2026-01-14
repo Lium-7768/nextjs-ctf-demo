@@ -29,16 +29,13 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
         with:
-          node-version: '20'
+          bun-version: latest
 
       - name: Install dependencies
-        run: |
-          if [ -f package.json ]; then
-            npm install
-          fi
+        run: bun install
 
       - name: Run AI Code Review
         env:
@@ -47,4 +44,4 @@ jobs:
           PR_NUMBER: ${{ github.event.number }}
           REPO_OWNER: ${{ github.repository_owner }}
           REPO_NAME: ${{ github.event.repository.name }}
-        run: node .github/scripts/code-review.js
+        run: bun run .github/scripts/code-review.js
