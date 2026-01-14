@@ -1,4 +1,4 @@
-const { Octokit } = require('@octokit/rest');
+const { Octokit } = require('octokit');
 const { Anthropic } = require('@anthropic-ai/sdk');
 
 // Configuration
