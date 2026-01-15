@@ -3,8 +3,10 @@ import type { Section } from '@nextjs-ctf-demo/contentful-bff'
 
 export function FeaturesSection({
   section,
+  lang,
 }: {
   section: Section
+  lang: string
 }) {
   return (
     <section className="py-20 px-4 bg-gray-50">
@@ -12,7 +14,7 @@ export function FeaturesSection({
         <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">
           {section.fields.heading}
         </h2>
-        <div className="prose prose max-w-4xl mx-auto">
+        <div className="prose prose max-w-4xl mx-auto break-words">
           {renderRichText(section.fields.description)}
         </div>
       </div>

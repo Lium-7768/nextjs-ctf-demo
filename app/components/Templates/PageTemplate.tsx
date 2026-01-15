@@ -3,8 +3,10 @@ import type { Page } from '@nextjs-ctf-demo/contentful-bff'
 
 export function PageTemplate({
   page,
+  lang,
 }: {
   page: Page
+  lang: string
 }) {
   return (
     <div>
@@ -18,7 +20,7 @@ export function PageTemplate({
 
       {page.fields.sections?.map((section) => {
         const SectionComponent = getSectionComponent(section.fields.type)
-        return <SectionComponent key={section.sys.id} section={section} />
+        return <SectionComponent key={section.sys.id} section={section} lang={lang} />
       })}
     </div>
   )
