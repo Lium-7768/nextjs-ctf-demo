@@ -27,39 +27,45 @@ function parseAIResponse(content) {
     event: 'COMMENT'
   };
 
-  // Current implementation extracts inline comments from AI response
-  // Format expected:
-  // ## 发现的问题
-  // ### [严重级别] 问题标题
-  // - **位置**: file:line
-  // - **问题**: 具体问题描述
-  // - **建议**: 改进建议
-
   const lines = content.split('\n');
   let currentSection = null;
   let currentIssue = null;
   let severityCount = { critical: 0, error: 0, warning: 0 };
+  let issueBody = '';
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
 
     // Detect sections
     if (line.startsWith('## ')) {
-      currentSection = line.replace('## ', '').trim();
+      currentSection = line.replace('## ', '').replace(/\s*\(共 \d+ 个\)/, '').trim();
+      // Skip sections we don't need for inline comments
+      if (currentSection.includes('总体建议') || currentSection.includes('优点')) {
+        currentSection = null;
+      }
+      continue;
+    }
+
+    // Skip if we're not in the issues section
+    if (!currentSection || !currentSection.includes('发现的问题')) {
       continue;
     }
 
     // Detect issue headers
     const issueMatch = line.match(/###\s*\[?([^\]]+)\]?\s*(.+)/);
     if (issueMatch) {
+      // Save previous issue if exists
+      if (currentIssue && currentIssue.file) {
+        review.comments.push(currentIssue);
+      }
+
       const severity = issueMatch[1].toLowerCase();
       currentIssue = {
         severity,
         title: issueMatch[2].trim(),
         file: null,
         line: null,
-        problem: null,
-        suggestion: null
+        body: ''
       };
       severityCount[severity] = (severityCount[severity] || 0) + 1;
       continue;
@@ -73,20 +79,21 @@ function parseAIResponse(content) {
         currentIssue.line = parseInt(fileLineMatch[2], 10);
       }
 
-      const problemMatch = line.match(/\*\*问题\*:\s*(.+)/);
-      if (problemMatch) {
-        currentIssue.problem = problemMatch[1];
-      }
-
-      const suggestionMatch = line.match(/\*\*建议\*:\s*(.+)/);
-      if (suggestionMatch) {
-        currentIssue.suggestion = suggestionMatch[1];
+      // Build the issue body (excluding the position line since it goes in inline comment)
+      if (!line.includes('**位置**:') && line.trim() !== '') {
+        if (issueBody) {
+          issueBody += '\n' + line;
+        } else {
+          issueBody = line;
+        }
+        currentIssue.body = issueBody;
       }
 
       // End of issue when hitting blank line or next section
       if (line.trim() === '' && currentIssue.file) {
         review.comments.push(currentIssue);
         currentIssue = null;
+        issueBody = '';
       }
     }
   }
@@ -101,47 +108,41 @@ function parseAIResponse(content) {
   if (severityCount.critical > 0 || severityCount.error > 0) {
     review.event = 'REQUEST_CHANGES';
   } else {
-    // Always use COMMENT (never APPROVE) because GitHub Actions is not permitted to approve
     review.event = 'COMMENT';
   }
 
-  // Build review body (remove inline comment details from body)
-  review.body = buildReviewBody(content, review.comments);
+  // Build review body (only include 总体建议 section if exists)
+  review.body = buildReviewBody(content);
 
   return review;
 }
 
 /**
- * Build review body without inline comment details
+ * Build review body - only include 总体建议 section
  * @param {string} originalContent - Original AI content
- * @param {Array} comments - Extracted inline comments
  * @returns {string} Review body
  */
-function buildReviewBody(originalContent, comments) {
-  let body = originalContent;
-
-  // Remove the inline comment details (位置/问题/建议) since they'll be in the actual inline comments
-  // Keep the summary and overall feedback
+function buildReviewBody(originalContent) {
   const lines = originalContent.split('\n');
   const result = [];
-  let inIssue = false;
-  let skipNext = false;
+  let inOverallSection = false;
 
   for (const line of lines) {
-    if (line.startsWith('### ')) {
-      inIssue = true;
-    }
-
-    if (inIssue && line.trim() === '') {
-      inIssue = false;
-    }
-
-    // Skip the detail lines within issues
-    if (inIssue && (line.includes('**位置**:') || line.includes('**问题**:') || line.includes('**建议**:'))) {
+    // Look for 总体建议 section
+    if (line.includes('总体建议')) {
+      inOverallSection = true;
+      result.push(line);
       continue;
     }
 
-    result.push(line);
+    if (inOverallSection) {
+      result.push(line);
+    }
+  }
+
+  // If no 总体建议 section, return a simple message
+  if (result.length === 0) {
+    return '🤖 **AI 代码审查已完成**\n\n请查看代码中的具体评论。';
   }
 
   return result.join('\n');
@@ -212,7 +213,7 @@ function mapCommentsToPositions(comments, files) {
       return {
         path: comment.file,
         position: posInfo.position,
-        body: `**${comment.severity.toUpperCase()}**: ${comment.title}\n\n${comment.problem || ''}\n\n💡 ${comment.suggestion || '请修改此问题'}`
+        body: `**[${comment.severity.toUpperCase()}]** ${comment.title}\n\n${comment.body || ''}`
       };
     })
     .filter(Boolean);
