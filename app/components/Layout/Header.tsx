@@ -17,7 +17,7 @@ export function Header({
           className="font-bold text-xl flex items-center gap-2 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
           aria-label="Home"
         >
-          <span>🚀</span>
+          <span aria-hidden="true">🚀</span>
           <span className="hidden md:inline">Demo Company</span>
         </Link>
 

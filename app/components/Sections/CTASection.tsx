@@ -10,12 +10,12 @@ export function CTASection({
   lang: string
 }) {
   return (
-    <section className="py-20 px-4 bg-gradient-to-r from-green-400 to-green-600">
+    <section className="py-20 px-4 bg-gradient-to-r from-green-600 to-green-800">
       <div className="container mx-auto text-center">
         <h2 className="text-3xl font-bold text-white mb-8">
           {section.fields.heading}
         </h2>
-        <div className="prose prose-invert max-w-3xl mx-auto text-white mb-8">
+        <div className="prose prose-invert max-w-3xl mx-auto text-green-50 mb-8">
           {renderRichText(section.fields.description)}
         </div>
         <Link
