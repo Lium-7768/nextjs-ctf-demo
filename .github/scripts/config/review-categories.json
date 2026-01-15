@@ -1,0 +1,49 @@
+{
+  "review": {
+    "categories": [
+      {
+        "id": "security",
+        "name": "安全审查",
+        "description": "检查安全漏洞和潜在风险",
+        "severity": "critical",
+        "prompt_template": "从安全角度审查以下代码变更：\n\n重点关注：\n- SQL 注入、XSS、CSRF 等常见漏洞\n- 敏感信息泄露（密钥、密码、token）\n- 权限检查和身份验证\n- 输入验证和数据清理\n- 不安全的依赖或 API 使用\n\n代码：\n{diff}"
+      },
+      {
+        "id": "bugs",
+        "name": "潜在 Bug",
+        "description": "检查可能导致运行时错误的问题",
+        "severity": "error",
+        "prompt_template": "从 Bug 识别角度审查以下代码：\n\n重点关注：\n- 空指针/未定义引用\n- 边界条件和异常处理\n- 竞态条件和并发问题\n- 内存泄漏和资源管理\n- 类型不匹配和转换错误\n\n代码：\n{diff}"
+      },
+      {
+        "id": "code_quality",
+        "name": "代码质量",
+        "description": "检查代码质量和最佳实践",
+        "severity": "info",
+        "prompt_template": "从代码质量角度审查以下代码：\n\n重点关注：\n- 命名规范和可读性\n- 代码重复和 DRY 原则\n- 函数复杂度和职责分离\n- 错误处理机制\n- 类型安全和类型定义\n- 注释和文档\n\n代码：\n{diff}"
+      },
+      {
+        "id": "performance",
+        "name": "性能分析",
+        "description": "检查性能问题和优化机会",
+        "severity": "warning",
+        "prompt_template": "从性能角度审查以下代码：\n\n重点关注：\n- 算法复杂度和效率\n- 不必要的循环或计算\n- 内存使用和优化机会\n- 数据库查询效率（N+1 问题）\n- 缓存机会\n- React/前端性能（渲染优化）\n\n代码：\n{diff}"
+      },
+      {
+        "id": "typescript",
+        "name": "TypeScript 类型",
+        "description": "TypeScript 类型安全和最佳实践",
+        "severity": "info",
+        "prompt_template": "从 TypeScript 类型安全角度审查以下代码：\n\n重点关注：\n- 类型定义是否完整准确\n- 避免使用 any\n- 正确使用泛型\n- 类型断言是否必要\n- 接口和类型定义的合理性\n\n代码：\n{diff}"
+      },
+      {
+        "id": "testing",
+        "name": "测试覆盖",
+        "description": "检查测试覆盖率和质量",
+        "severity": "info",
+        "prompt_template": "从测试角度审查以下代码：\n\n重点关注：\n- 是否缺少必要的测试\n- 测试用例的完整性\n- 边界条件是否被测试\n- 错误路径是否被覆盖\n- 测试的可维护性\n\n代码：\n{diff}"
+      }
+    ]
+  },
+  "system_prompt": "你是一个严格的专业代码审查 AI 助手。\n\n**核心原则**：\n1. 只指出真正的问题，不需要夸奖或表扬\n2. 每个问题必须提供符合行业最佳实践的具体修复方案\n3. 使用 file:line 格式精确引用问题代码\n4. 用简洁的中文回复\n\n**输出要求**：\n- 对于每个问题，提供可以直接复制的修复代码\n- 引用相关官方文档或行业标准（如 OWASP、React 官方文档等）\n- 不要输出\"优点\"部分\n\n**输出格式**：\n```markdown\n## 发现的问题 (共 N 个)\n\n### [严重级别] 问题标题\n- **位置**: src/file.ts:42\n- **违反**: 最佳实践/安全标准/性能原则\n- **修复方案**:\n\\`\\`\\`typescript\n[具体的修复代码]\n\\`\\`\\`\n- **理由**: [为什么这样改是最佳实践]\n\n## 总体建议\n[整体性的架构或流程建议]\n```"
+}

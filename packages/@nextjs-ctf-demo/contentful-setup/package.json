@@ -1,0 +1,16 @@
+{
+  "name": "@nextjs-ctf-demo/contentful-setup",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "setup": "bun run src/setup.ts",
+    "seed": "bun run src/seed.ts"
+  },
+  "dependencies": {
+    "contentful-management": "^11.30.0"
+  },
+  "devDependencies": {
+    "typescript": "^5",
+    "@types/node": "^20"
+  }
+}

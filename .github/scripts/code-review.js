@@ -1,33 +1,230 @@
 const { Octokit } = require('octokit');
 const { Anthropic } = require('@anthropic-ai/sdk');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { PRCompressor } = require('./lib/pr-compressor');
+const { PromptBuilder } = require('./lib/prompt-builder');
+const config = require('./config/default.config');
 
-// Configuration
-const CONFIG = {
-  maxFiles: 10,
-  maxFileSize: 3000, // characters
-  excludePatterns: [
-    'node_modules',
-    'dist',
-    'build',
-    '.next',
-    'coverage',
-    '*.min.js',
-    '*.min.css',
-    'package-lock.json',
-    'yarn.lock',
-    '*.log'
-  ]
-};
-
-// Get AI provider from environment
-const AI_PROVIDER = process.env.AI_PROVIDER || 'anthropic';
+/**
+ * AI Code Review Script with Inline Comments
+ *
+ * Creates real GitHub PR reviews with inline code comments.
+ * Supports multiple AI providers: Anthropic Claude, Google Gemini, Zhipu GLM.
+ */
 
 // Initialize GitHub client
 const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
 
 /**
- * Get PR files and changes
+ * Parse AI response to extract structured review comments
+ * @param {string} content - AI response content
+ * @returns {Object} Parsed review with inline comments
+ */
+function parseAIResponse(content) {
+  const review = {
+    body: '',
+    comments: [],
+    event: 'COMMENT'
+  };
+
+  const lines = content.split('\n');
+  let currentSection = null;
+  let currentIssue = null;
+  let severityCount = { critical: 0, error: 0, warning: 0 };
+  let issueBody = '';
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    // Detect sections
+    if (line.startsWith('## ')) {
+      currentSection = line.replace('## ', '').replace(/\s*\(共 \d+ 个\)/, '').trim();
+      // Skip sections we don't need for inline comments
+      if (currentSection.includes('总体建议') || currentSection.includes('优点')) {
+        currentSection = null;
+      }
+      continue;
+    }
+
+    // Skip if we're not in the issues section
+    if (!currentSection || !currentSection.includes('发现的问题')) {
+      continue;
+    }
+
+    // Detect issue headers
+    const issueMatch = line.match(/###\s*\[?([^\]]+)\]?\s*(.+)/);
+    if (issueMatch) {
+      // Save previous issue if exists
+      if (currentIssue && currentIssue.file) {
+        review.comments.push(currentIssue);
+      }
+
+      const severity = issueMatch[1].toLowerCase();
+      currentIssue = {
+        severity,
+        title: issueMatch[2].trim(),
+        file: null,
+        line: null,
+        body: ''
+      };
+      severityCount[severity] = (severityCount[severity] || 0) + 1;
+      continue;
+    }
+
+    // Detect issue properties
+    if (currentIssue) {
+      const fileLineMatch = line.match(/\*\*位置\*:\s*([^\s:]+):(\d+)/);
+      if (fileLineMatch) {
+        currentIssue.file = fileLineMatch[1];
+        currentIssue.line = parseInt(fileLineMatch[2], 10);
+      }
+
+      // Build the issue body (excluding the position line since it goes in inline comment)
+      if (!line.includes('**位置**:') && line.trim() !== '') {
+        if (issueBody) {
+          issueBody += '\n' + line;
+        } else {
+          issueBody = line;
+        }
+        currentIssue.body = issueBody;
+      }
+
+      // End of issue when hitting blank line or next section
+      if (line.trim() === '' && currentIssue.file) {
+        review.comments.push(currentIssue);
+        currentIssue = null;
+        issueBody = '';
+      }
+    }
+  }
+
+  // Don't forget the last issue
+  if (currentIssue && currentIssue.file) {
+    review.comments.push(currentIssue);
+  }
+
+  // Determine review event based on severity
+  // Note: GitHub Actions cannot approve PRs, only use COMMENT or REQUEST_CHANGES
+  if (severityCount.critical > 0 || severityCount.error > 0) {
+    review.event = 'REQUEST_CHANGES';
+  } else {
+    review.event = 'COMMENT';
+  }
+
+  // Build review body (only include 总体建议 section if exists)
+  review.body = buildReviewBody(content);
+
+  return review;
+}
+
+/**
+ * Build review body - only include 总体建议 section
+ * @param {string} originalContent - Original AI content
+ * @returns {string} Review body
+ */
+function buildReviewBody(originalContent) {
+  const lines = originalContent.split('\n');
+  const result = [];
+  let inOverallSection = false;
+
+  for (const line of lines) {
+    // Look for 总体建议 section
+    if (line.includes('总体建议')) {
+      inOverallSection = true;
+      result.push(line);
+      continue;
+    }
+
+    if (inOverallSection) {
+      result.push(line);
+    }
+  }
+
+  // If no 总体建议 section, return a simple message
+  if (result.length === 0) {
+    return '🤖 **AI 代码审查已完成**\n\n请查看代码中的具体评论。';
+  }
+
+  return result.join('\n');
+}
+
+/**
+ * Convert file:line to diff position
+ * @param {string} filePath - File path
+ * @param {number} lineNumber - Line number in the file
+ * @param {Array} files - PR files with patches
+ * @returns {Object|null} Position info with path, position, or null if not found
+ */
+function findPositionInDiff(filePath, lineNumber, files) {
+  const file = files.find(f => f.filename === filePath);
+  if (!file || !file.patch) return null;
+
+  const patchLines = file.patch.split('\n');
+  let currentLineInNewFile = 0;
+  let position = 0;
+
+  for (const patchLine of patchLines) {
+    // Match hunk header: @@ -old_start,old_count +new_start,new_count @@
+    const hunkMatch = patchLine.match(/^@@\s+-\d+(?:,\d+)?\s+\+(\d+)(?:,(\d+))?/);
+    if (hunkMatch) {
+      currentLineInNewFile = parseInt(hunkMatch[1], 10);
+      // position continues counting from previous hunk
+      continue;
+    }
+
+    // Increment position for each line in the diff
+    position++;
+
+    // Track new file lines
+    if (patchLine.startsWith('+') && !patchLine.startsWith('++')) {
+      currentLineInNewFile++;
+      if (currentLineInNewFile === lineNumber) {
+        return { path: filePath, position };
+      }
+    }
+
+    // Track unchanged lines
+    if (patchLine.startsWith(' ')) {
+      currentLineInNewFile++;
+      if (currentLineInNewFile === lineNumber) {
+        return { path: filePath, position };
+      }
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Map line numbers to diff positions
+ * @param {Array} comments - Comments with file:line references
+ * @param {Array} files - PR files
+ * @returns {Array} Comments with position info
+ */
+function mapCommentsToPositions(comments, files) {
+  return comments
+    .map(comment => {
+      const posInfo = findPositionInDiff(comment.file, comment.line, files);
+      if (!posInfo) {
+        console.warn(`  ⚠️  Could not find position for ${comment.file}:${comment.line}`);
+        return null;
+      }
+
+      return {
+        path: comment.file,
+        position: posInfo.position,
+        body: `**[${comment.severity.toUpperCase()}]** ${comment.title}\n\n${comment.body || ''}`
+      };
+    })
+    .filter(Boolean);
+}
+
+/**
+ * Get PR files and changes from GitHub
+ * @param {string} owner - Repository owner
+ * @param {string} repo - Repository name
+ * @param {number} prNumber - Pull request number
+ * @returns {Promise<Array>} Array of file objects
  */
 async function getPRFiles(owner, repo, prNumber) {
   const { data: files } = await octokit.rest.pulls.listFiles({
@@ -36,66 +233,59 @@ async function getPRFiles(owner, repo, prNumber) {
     pull_number: prNumber,
   });
 
-  return files
-    .filter(file => {
-      const changes = file.patch || '';
-      const isExcluded = CONFIG.excludePatterns.some(pattern =>
-        file.filename.includes(pattern)
-      );
-      return !isExcluded && changes.length > 0;
-    })
-    .slice(0, CONFIG.maxFiles)
-    .map(file => ({
-      filename: file.filename,
-      status: file.status,
-      additions: file.additions,
-      deletions: file.deletions,
-      changes: file.changes,
-      patch: file.patch?.slice(0, CONFIG.maxFileSize) || ''
-    }));
+  return files.map(file => ({
+    filename: file.filename,
+    status: file.status,
+    additions: file.additions,
+    deletions: file.deletions,
+    changes: file.changes,
+    patch: file.patch || ''
+  }));
 }
 
 /**
- * Create review prompt
+ * Get PR details from GitHub
+ * @param {string} owner - Repository owner
+ * @param {string} repo - Repository name
+ * @param {number} prNumber - Pull request number
+ * @returns {Promise<Object>} PR details
  */
-function createReviewPrompt(files, prTitle, prDescription) {
-  const filesSummary = files.map(f =>
-    `## ${f.filename} (${f.status})
-\`\`\`diff
-${f.patch}
-\`\`\``
-  ).join('\n\n');
+async function getPRDetails(owner, repo, prNumber) {
+  const { data: pr } = await octokit.rest.pulls.get({
+    owner,
+    repo,
+    pull_number: prNumber,
+  });
 
-  return `You are a code reviewer. Review the following pull request changes.
-
-PR Title: ${prTitle}
-PR Description: ${prDescription || 'No description provided'}
-
-# Files Changed
-${filesSummary}
-
-Please provide a structured code review with:
-1. **Summary**: Brief overview of changes
-2. **Issues**: Any bugs, security issues, or problems found (with file:line references)
-3. **Suggestions**: Improvements or best practices recommendations
-4. **Positive**: What was done well
-
-Format your response in markdown with clear sections.`;
+  return {
+    number: pr.number,
+    title: pr.title,
+    description: pr.body || '',
+    author: pr.user.login,
+    baseBranch: pr.base.ref,
+    headBranch: pr.head.ref,
+    headSha: pr.head.sha
+  };
 }
 
 /**
  * Call Anthropic Claude API
+ * @param {string} systemPrompt - System prompt
+ * @param {string} userPrompt - User prompt
+ * @returns {Promise<Object>} Response with content and provider info
  */
-async function reviewWithClaude(prompt) {
+async function reviewWithClaude(systemPrompt, userPrompt) {
   try {
-    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    const anthropic = new Anthropic({ apiKey: config.ai.apiKey.anthropic });
     const message = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
-      max_tokens: 4000,
+      model: config.ai.model.anthropic,
+      max_tokens: config.ai.maxResponseTokens,
+      system: systemPrompt,
       messages: [{
         role: 'user',
-        content: prompt
-      }]
+        content: userPrompt
+      }],
+      temperature: config.ai.temperature
     });
 
     return {
@@ -111,13 +301,17 @@ async function reviewWithClaude(prompt) {
 
 /**
  * Call Google Gemini API
+ * @param {string} systemPrompt - System prompt
+ * @param {string} userPrompt - User prompt
+ * @returns {Promise<Object>} Response with content and provider info
  */
-async function reviewWithGemini(prompt) {
+async function reviewWithGemini(systemPrompt, userPrompt) {
   try {
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
+    const genAI = new GoogleGenerativeAI(config.ai.apiKey.gemini);
+    const model = genAI.getGenerativeModel({ model: config.ai.model.gemini });
 
-    const result = await model.generateContent(prompt);
+    const combinedPrompt = `${systemPrompt}\n\n${userPrompt}`;
+    const result = await model.generateContent(combinedPrompt);
     const response = await result.response;
     const text = response.text();
 
@@ -134,25 +328,26 @@ async function reviewWithGemini(prompt) {
 
 /**
  * Call Zhipu GLM API
+ * @param {string} systemPrompt - System prompt
+ * @param {string} userPrompt - User prompt
+ * @returns {Promise<Object>} Response with content and provider info
  */
-async function reviewWithGLM(prompt) {
+async function reviewWithGLM(systemPrompt, userPrompt) {
   try {
     const response = await fetch('https://open.bigmodel.cn/api/paas/v4/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.GLM_API_KEY}`
+        'Authorization': `Bearer ${config.ai.apiKey.glm}`
       },
       body: JSON.stringify({
-        model: 'glm-4-flash',
+        model: config.ai.model.glm,
         messages: [
-          {
-            role: 'user',
-            content: prompt
-          }
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
         ],
-        max_tokens: 4000,
-        temperature: 0.7
+        max_tokens: config.ai.maxResponseTokens,
+        temperature: config.ai.temperature
       })
     });
 
@@ -177,95 +372,184 @@ async function reviewWithGLM(prompt) {
 
 /**
  * Route to appropriate AI provider
+ * @param {string} systemPrompt - System prompt
+ * @param {string} userPrompt - User prompt
+ * @returns {Promise<Object>} Response with content and provider info
  */
-async function getAIReview(prompt) {
-  console.log(`🤖 Using AI provider: ${AI_PROVIDER}`);
+async function getAIReview(systemPrompt, userPrompt) {
+  const provider = config.ai.provider;
+  console.log(`🤖 Using AI provider: ${provider}`);
 
-  switch (AI_PROVIDER.toLowerCase()) {
+  switch (provider.toLowerCase()) {
     case 'anthropic':
     case 'claude':
-      return await reviewWithClaude(prompt);
+      return await reviewWithClaude(systemPrompt, userPrompt);
     case 'gemini':
     case 'google':
-      return await reviewWithGemini(prompt);
+      return await reviewWithGemini(systemPrompt, userPrompt);
     case 'glm':
     case 'zhipu':
-      return await reviewWithGLM(prompt);
+      return await reviewWithGLM(systemPrompt, userPrompt);
     default:
-      throw new Error(`Unknown AI provider: ${AI_PROVIDER}. Supported providers: anthropic, gemini, glm`);
+      throw new Error(`Unknown AI provider: ${provider}. Supported providers: anthropic, gemini, glm`);
   }
 }
 
 /**
- * Post review comment to PR
+ * Create a PR review with inline comments
+ * @param {string} owner - Repository owner
+ * @param {string} repo - Repository name
+ * @param {number} prNumber - Pull request number
+ * @param {Object} review - Review object with body, event, comments
+ * @param {string} headSha - Head commit SHA
  */
-async function postReviewComment(owner, repo, prNumber, reviewBody, providerInfo) {
-  const comment = `## 🤖 AI Code Review
+async function createPRReview(owner, repo, prNumber, review, headSha) {
+  // Map comments to diff positions
+  console.log(`📍 Processing ${review.comments.length} inline comments...`);
 
-${reviewBody}
+  const inlineComments = mapCommentsToPositions(review.comments, review.files);
 
----
-*This review was generated by [${providerInfo.provider}](${providerInfo.providerUrl})*`;
+  console.log(`✅ Mapped ${inlineComments.length} comments to diff positions`);
 
-  await octokit.rest.issues.createComment({
+  // Build review request body
+  const reviewBody = {
     owner,
     repo,
-    issue_number: prNumber,
-    body: comment
-  });
+    pull_number: prNumber,
+    commit_id: headSha,
+    body: `${review.body}\n\n---\n\n*This review was generated by ${review.providerInfo.provider}*`,
+    event: review.event
+  };
 
-  console.log('✅ Review comment posted successfully');
+  // Add inline comments if we have any
+  if (inlineComments.length > 0) {
+    reviewBody.comments = inlineComments;
+    console.log(`💬 Adding ${inlineComments.length} inline comments to review`);
+  }
+
+  // Create the review
+  const result = await octokit.rest.pulls.createReview(reviewBody);
+
+  console.log(`✅ PR review created with event: ${review.event}`);
+  return result;
 }
 
 /**
  * Main function
  */
 async function main() {
-  const { PR_NUMBER, REPO_OWNER, REPO_NAME } = process.env;
+  // Validate configuration
+  const validation = config.validate(config);
+  if (!validation.valid) {
+    console.error('❌ Configuration errors:');
+    validation.errors.forEach(err => console.error(`  - ${err}`));
+    process.exit(1);
+  }
+
+  if (validation.warnings.length > 0) {
+    console.warn('⚠️ Configuration warnings:');
+    validation.warnings.forEach(warn => console.warn(`  - ${warn}`));
+  }
+
+  // Get environment variables
+  const PR_NUMBER = process.env.PR_NUMBER || config.github.prNumber;
+  const REPO_OWNER = process.env.REPO_OWNER || config.github.owner;
+  const REPO_NAME = process.env.REPO_NAME || config.github.repo;
 
   if (!PR_NUMBER || !REPO_OWNER || !REPO_NAME) {
-    console.error('❌ Missing required environment variables');
+    console.error('❌ Missing required environment variables: PR_NUMBER, REPO_OWNER, REPO_NAME');
     process.exit(1);
   }
 
   try {
     console.log(`🔍 Starting code review for PR #${PR_NUMBER}...`);
+    console.log(`   Repository: ${REPO_OWNER}/${REPO_NAME}`);
 
     // Get PR details
-    const { data: pr } = await octokit.rest.pulls.get({
-      owner: REPO_OWNER,
-      repo: REPO_NAME,
-      pull_number: parseInt(PR_NUMBER),
-    });
-
-    console.log(`📝 PR: ${pr.title}`);
-    console.log(`👤 Author: ${pr.user.login}`);
-    console.log(`🌿 Branch: ${pr.head.ref} → ${pr.base.ref}`);
+    const prDetails = await getPRDetails(REPO_OWNER, REPO_NAME, parseInt(PR_NUMBER));
+    console.log(`📝 PR: ${prDetails.title}`);
+    console.log(`👤 Author: ${prDetails.author}`);
+    console.log(`🌿 Branch: ${prDetails.headBranch} → ${prDetails.baseBranch}`);
 
     // Get changed files
     const files = await getPRFiles(REPO_OWNER, REPO_NAME, parseInt(PR_NUMBER));
-    console.log(`📁 Found ${files.length} files to review`);
+    console.log(`📁 Found ${files.length} files in PR`);
 
     if (files.length === 0) {
       console.log('✅ No files to review');
       return;
     }
 
-    // Create review prompt
-    const prompt = createReviewPrompt(files, pr.title, pr.body);
+    // Compress PR content using PRCompressor
+    const compressor = new PRCompressor(config.compression);
+    const compressedPR = compressor.compress({
+      ...prDetails,
+      files
+    });
+
+    // Build prompts using PromptBuilder
+    const promptBuilder = new PromptBuilder();
+    const prompts = promptBuilder.buildReviewPrompt(compressedPR, {
+      enabledCategories: config.review.enabledCategories
+    });
 
     // Get AI review
-    console.log(`🤖 Requesting AI review (${AI_PROVIDER})...`);
-    const { content, provider, providerUrl } = await getAIReview(prompt);
+    console.log(`🤖 Requesting AI review (${config.ai.provider})...`);
+    const { content, provider, providerUrl } = await getAIReview(prompts.system, prompts.user);
 
-    // Post review as comment
-    await postReviewComment(REPO_OWNER, REPO_NAME, parseInt(PR_NUMBER), content, { provider, providerUrl });
+    // Parse AI response
+    console.log(`📝 Parsing AI response...`);
+    const parsedReview = parseAIResponse(content);
+    parsedReview.providerInfo = { provider, providerUrl };
+    parsedReview.files = compressedPR.files;
+
+    console.log(`   Found ${parsedReview.comments.length} issues`);
+    console.log(`   Review event: ${parsedReview.event}`);
+
+    // Show summary
+    if (parsedReview.comments.length > 0) {
+      console.log(`   Issues by severity:`);
+      const bySeverity = {};
+      parsedReview.comments.forEach(c => {
+        bySeverity[c.severity] = (bySeverity[c.severity] || 0) + 1;
+      });
+      Object.entries(bySeverity).forEach(([severity, count]) => {
+        console.log(`     - ${severity}: ${count}`);
+      });
+    }
+
+    // Create PR review with inline comments
+    if (config.github.postComment) {
+      await createPRReview(
+        REPO_OWNER,
+        REPO_NAME,
+        parseInt(PR_NUMBER),
+        parsedReview,
+        prDetails.headSha
+      );
+    } else {
+      // Dry run - just output
+      console.log('\n' + '='.repeat(60));
+      console.log('DRY RUN - Would create review:');
+      console.log(`  Event: ${parsedReview.event}`);
+      console.log(`  Body: ${parsedReview.body.substring(0, 100)}...`);
+      console.log(`  Inline comments: ${parsedReview.comments.length}`);
+      console.log('='.repeat(60) + '\n');
+    }
 
     console.log('✅ Code review completed successfully');
   } catch (error) {
     console.error('❌ Error during code review:', error.message);
+    if (error.stack) {
+      console.error(error.stack);
+    }
     process.exit(1);
   }
 }
 
-main();
+// Run if called directly
+if (require.main === module) {
+  main();
+}
+
+module.exports = { main };
