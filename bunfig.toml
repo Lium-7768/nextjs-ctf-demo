@@ -1,0 +1,10 @@
+[workspace]
+members = [
+  "packages/@nextjs-ctf-demo/*"
+]
+
+[install]
+hoist = true
+
+[cache]
+enable = true
