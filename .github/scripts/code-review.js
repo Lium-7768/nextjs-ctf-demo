@@ -97,12 +97,12 @@ function parseAIResponse(content) {
   }
 
   // Determine review event based on severity
+  // Note: GitHub Actions cannot approve PRs, only use COMMENT or REQUEST_CHANGES
   if (severityCount.critical > 0 || severityCount.error > 0) {
     review.event = 'REQUEST_CHANGES';
-  } else if (severityCount.warning > 0 || review.comments.length > 0) {
-    review.event = 'COMMENT';
   } else {
-    review.event = 'APPROVE';
+    // Always use COMMENT (never APPROVE) because GitHub Actions is not permitted to approve
+    review.event = 'COMMENT';
   }
 
   // Build review body (remove inline comment details from body)
