@@ -2,6 +2,7 @@ import { getPageBySlug, getFAQs } from '@nextjs-ctf-demo/contentful-bff'
 import { getServerLocale } from '@/lib/i18n'
 import { PageTemplate } from '@/components/Templates'
 import type { FAQ } from '@nextjs-ctf-demo/contentful-bff'
+import { notFound } from 'next/navigation'
 
 export default async function FAQPage({
   params: { lang },

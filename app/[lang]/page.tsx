@@ -1,6 +1,7 @@
 import { getPageBySlug } from '@nextjs-ctf-demo/contentful-bff'
 import { getServerLocale } from '@/lib/i18n'
 import { renderRichText } from '@nextjs-ctf-demo/contentful-bff/rich-text'
+import { notFound } from 'next/navigation'
 
 export default async function HomePage({
   params: { lang },
