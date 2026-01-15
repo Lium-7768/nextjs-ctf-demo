@@ -1,4 +1,4 @@
-export { contentfulClient }
+export { contentfulClient } from './client'
 export type { Page, Section, NavigationItem, GlobalSettings, FAQ } from './client'
 
 export { getPageBySlug, getAllPages } from './services/page.service'

@@ -11,10 +11,10 @@ export const contentfulClient: ContentfulClientApi<undefined> = createClient({
 export interface Page {
   sys: { id: string; createdAt: string; updatedAt: string }
   fields: {
-    slug: { 'zh-CN': string; 'en-US': string }
-    title: { 'zh-CN': string; 'en-US': string }
-    metaTitle: { 'zh-CN': string; 'en-US': string }
-    metaDescription: { 'zh-CN': string; 'en-US': string }
+    slug: string  // Unfolded when locale is specified
+    title: string  // Unfolded when locale is specified
+    metaTitle: string  // Unfolded when locale is specified
+    metaDescription: string  // Unfolded when locale is specified
     sections: Section[]
     template: 'default' | 'home' | 'products' | 'news'
     parentPage?: { sys: { id: string } }
@@ -26,13 +26,13 @@ export interface Section {
   sys: { id: string }
   fields: {
     type: 'hero' | 'content' | 'features' | 'testimonials' | 'cta'
-    heading: { 'zh-CN': string; 'en-US': string }
+    heading: string  // Unfolded when locale is specified
     description: any
     order: number
     featuredImage?: {
       fields: {
         file: { url: string }
-        title: { 'zh-CN': string; 'en-US': string }
+        title: string  // Unfolded when locale is specified
       }
     }
   }
@@ -41,7 +41,7 @@ export interface Section {
 export interface NavigationItem {
   sys: { id: string }
   fields: {
-    label: { 'zh-CN': string; 'en-US': string }
+    label: string  // Unfolded when locale is specified
     linkTo: string
     order: number
     parent?: { sys: { id: string } }
@@ -51,16 +51,16 @@ export interface NavigationItem {
 export interface GlobalSettings {
   sys: { id: string }
   fields: {
-    companyName: { 'zh-CN': string; 'en-US': string }
-    tagline: { 'zh-CN': string; 'en-US': string }
+    companyName: string  // Unfolded when locale is specified
+    tagline: string  // Unfolded when locale is specified
     logo?: {
       fields: { file: { url: string } }
     }
     email: string
     phone: string
-    address: { 'zh-CN': string; 'en-US': string }
+    address: string  // Unfolded when locale is specified
     socialLinks: { label: string; url: string }[]
-    footerText: { 'zh-CN': string; 'en-US': string }
+    footerText?: string  // Unfolded when locale is specified
   }
 }
 

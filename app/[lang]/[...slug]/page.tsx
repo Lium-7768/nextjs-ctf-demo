@@ -4,16 +4,26 @@ import { HomeTemplate, PageTemplate } from '@/app/components/Templates'
 
 export const dynamic = 'force-dynamic'
 
-export default async function LangPage({
+export async function generateStaticParams() {
+  // 在 build 时生成所有页面的静态路径
+  return [
+    { slug: [] }, // 主页
+  ]
+}
+
+export default async function CatchAllPage({
   params,
 }: {
-  params: Promise<{ lang: string }>
+  params: Promise<{ lang: string; slug?: string[] }>
 }) {
-  const { lang } = await params
+  const { lang, slug = [] } = await params
   const locale = lang === 'zh' ? 'zh-CN' : 'en-US'
 
-  // 从 Contentful 获取主页 (slug = '')
-  const page = await getPageBySlug('', locale)
+  // 将 slug 数组转换为路径字符串
+  const slugPath = slug.join('/')
+
+  // 从 Contentful 获取页面
+  const page = await getPageBySlug(slugPath, locale)
 
   if (!page) {
     notFound()

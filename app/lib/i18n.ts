@@ -13,7 +13,7 @@ export function getLocalizedPath(
   path: string,
   locale: Locale
 ): string {
-  return \`/\${locale}\${path\`
+  return `/${locale}${path}`
 }
 
 export function getServerLocale(locale: string): string {

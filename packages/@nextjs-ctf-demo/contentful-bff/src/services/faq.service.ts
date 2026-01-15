@@ -5,16 +5,16 @@ export async function getFAQs(locale: string, category?: string): Promise<FAQ[]>
     const query: any = {
       content_type: 'faq',
       locale: locale,
-      order: 'fields.order',
+      order: ['fields.order'],
     }
     
     if (category) {
       query['fields.category'] = category
     }
-    
-    const entries = await contentfulClient.getEntries<FAQ>(query)
-    
-    return entries.items
+
+    const entries = await contentfulClient.getEntries<any>(query)
+
+    return entries.items as unknown as FAQ[]
   } catch (error) {
     console.error('Error fetching FAQs:', error)
     return []

@@ -4,7 +4,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./rich-text": "./src/rich-text/renderer.ts"
+    "./rich-text": "./src/rich-text/renderer.tsx"
   },
   "dependencies": {
     "contentful": "^11.10.2",
