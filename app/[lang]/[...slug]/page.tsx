@@ -34,11 +34,11 @@ export default async function CatchAllPage({
 
   switch (template) {
     case 'home':
-      return <HomeTemplate page={page} />
+      return <HomeTemplate page={page} lang={lang} />
     case 'default':
     case 'products':
     case 'news':
     default:
-      return <PageTemplate page={page} />
+      return <PageTemplate page={page} lang={lang} />
   }
 }
