@@ -6,14 +6,217 @@ const { PromptBuilder } = require('./lib/prompt-builder');
 const config = require('./config/default.config');
 
 /**
- * AI Code Review Script
+ * AI Code Review Script with Inline Comments
  *
- * Automated PR code review with intelligent content compression.
+ * Creates real GitHub PR reviews with inline code comments.
  * Supports multiple AI providers: Anthropic Claude, Google Gemini, Zhipu GLM.
  */
 
 // Initialize GitHub client
 const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
+
+/**
+ * Parse AI response to extract structured review comments
+ * @param {string} content - AI response content
+ * @returns {Object} Parsed review with inline comments
+ */
+function parseAIResponse(content) {
+  const review = {
+    body: '',
+    comments: [],
+    event: 'COMMENT'
+  };
+
+  // Current implementation extracts inline comments from AI response
+  // Format expected:
+  // ## 发现的问题
+  // ### [严重级别] 问题标题
+  // - **位置**: file:line
+  // - **问题**: 具体问题描述
+  // - **建议**: 改进建议
+
+  const lines = content.split('\n');
+  let currentSection = null;
+  let currentIssue = null;
+  let severityCount = { critical: 0, error: 0, warning: 0 };
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    // Detect sections
+    if (line.startsWith('## ')) {
+      currentSection = line.replace('## ', '').trim();
+      continue;
+    }
+
+    // Detect issue headers
+    const issueMatch = line.match(/###\s*\[?([^\]]+)\]?\s*(.+)/);
+    if (issueMatch) {
+      const severity = issueMatch[1].toLowerCase();
+      currentIssue = {
+        severity,
+        title: issueMatch[2].trim(),
+        file: null,
+        line: null,
+        problem: null,
+        suggestion: null
+      };
+      severityCount[severity] = (severityCount[severity] || 0) + 1;
+      continue;
+    }
+
+    // Detect issue properties
+    if (currentIssue) {
+      const fileLineMatch = line.match(/\*\*位置\*:\s*([^\s:]+):(\d+)/);
+      if (fileLineMatch) {
+        currentIssue.file = fileLineMatch[1];
+        currentIssue.line = parseInt(fileLineMatch[2], 10);
+      }
+
+      const problemMatch = line.match(/\*\*问题\*:\s*(.+)/);
+      if (problemMatch) {
+        currentIssue.problem = problemMatch[1];
+      }
+
+      const suggestionMatch = line.match(/\*\*建议\*:\s*(.+)/);
+      if (suggestionMatch) {
+        currentIssue.suggestion = suggestionMatch[1];
+      }
+
+      // End of issue when hitting blank line or next section
+      if (line.trim() === '' && currentIssue.file) {
+        review.comments.push(currentIssue);
+        currentIssue = null;
+      }
+    }
+  }
+
+  // Don't forget the last issue
+  if (currentIssue && currentIssue.file) {
+    review.comments.push(currentIssue);
+  }
+
+  // Determine review event based on severity
+  if (severityCount.critical > 0 || severityCount.error > 0) {
+    review.event = 'REQUEST_CHANGES';
+  } else if (severityCount.warning > 0 || review.comments.length > 0) {
+    review.event = 'COMMENT';
+  } else {
+    review.event = 'APPROVE';
+  }
+
+  // Build review body (remove inline comment details from body)
+  review.body = buildReviewBody(content, review.comments);
+
+  return review;
+}
+
+/**
+ * Build review body without inline comment details
+ * @param {string} originalContent - Original AI content
+ * @param {Array} comments - Extracted inline comments
+ * @returns {string} Review body
+ */
+function buildReviewBody(originalContent, comments) {
+  let body = originalContent;
+
+  // Remove the inline comment details (位置/问题/建议) since they'll be in the actual inline comments
+  // Keep the summary and overall feedback
+  const lines = originalContent.split('\n');
+  const result = [];
+  let inIssue = false;
+  let skipNext = false;
+
+  for (const line of lines) {
+    if (line.startsWith('### ')) {
+      inIssue = true;
+    }
+
+    if (inIssue && line.trim() === '') {
+      inIssue = false;
+    }
+
+    // Skip the detail lines within issues
+    if (inIssue && (line.includes('**位置**:') || line.includes('**问题**:') || line.includes('**建议**:'))) {
+      continue;
+    }
+
+    result.push(line);
+  }
+
+  return result.join('\n');
+}
+
+/**
+ * Convert file:line to diff position
+ * @param {string} filePath - File path
+ * @param {number} lineNumber - Line number in the file
+ * @param {Array} files - PR files with patches
+ * @returns {Object|null} Position info with path, position, or null if not found
+ */
+function findPositionInDiff(filePath, lineNumber, files) {
+  const file = files.find(f => f.filename === filePath);
+  if (!file || !file.patch) return null;
+
+  const patchLines = file.patch.split('\n');
+  let currentLineInNewFile = 0;
+  let position = 0;
+
+  for (const patchLine of patchLines) {
+    // Match hunk header: @@ -old_start,old_count +new_start,new_count @@
+    const hunkMatch = patchLine.match(/^@@\s+-\d+(?:,\d+)?\s+\+(\d+)(?:,(\d+))?/);
+    if (hunkMatch) {
+      currentLineInNewFile = parseInt(hunkMatch[1], 10);
+      // position continues counting from previous hunk
+      continue;
+    }
+
+    // Increment position for each line in the diff
+    position++;
+
+    // Track new file lines
+    if (patchLine.startsWith('+') && !patchLine.startsWith('++')) {
+      currentLineInNewFile++;
+      if (currentLineInNewFile === lineNumber) {
+        return { path: filePath, position };
+      }
+    }
+
+    // Track unchanged lines
+    if (patchLine.startsWith(' ')) {
+      currentLineInNewFile++;
+      if (currentLineInNewFile === lineNumber) {
+        return { path: filePath, position };
+      }
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Map line numbers to diff positions
+ * @param {Array} comments - Comments with file:line references
+ * @param {Array} files - PR files
+ * @returns {Array} Comments with position info
+ */
+function mapCommentsToPositions(comments, files) {
+  return comments
+    .map(comment => {
+      const posInfo = findPositionInDiff(comment.file, comment.line, files);
+      if (!posInfo) {
+        console.warn(`  ⚠️  Could not find position for ${comment.file}:${comment.line}`);
+        return null;
+      }
+
+      return {
+        path: comment.file,
+        position: posInfo.position,
+        body: `**${comment.severity.toUpperCase()}**: ${comment.title}\n\n${comment.problem || ''}\n\n💡 ${comment.suggestion || '请修改此问题'}`
+      };
+    })
+    .filter(Boolean);
+}
 
 /**
  * Get PR files and changes from GitHub
@@ -59,7 +262,8 @@ async function getPRDetails(owner, repo, prNumber) {
     description: pr.body || '',
     author: pr.user.login,
     baseBranch: pr.base.ref,
-    headBranch: pr.head.ref
+    headBranch: pr.head.ref,
+    headSha: pr.head.sha
   };
 }
 
@@ -96,7 +300,7 @@ async function reviewWithClaude(systemPrompt, userPrompt) {
 
 /**
  * Call Google Gemini API
- * @param {string} systemPrompt - System prompt (not supported by Gemini, prepended to user prompt)
+ * @param {string} systemPrompt - System prompt
  * @param {string} userPrompt - User prompt
  * @returns {Promise<Object>} Response with content and provider info
  */
@@ -105,7 +309,6 @@ async function reviewWithGemini(systemPrompt, userPrompt) {
     const genAI = new GoogleGenerativeAI(config.ai.apiKey.gemini);
     const model = genAI.getGenerativeModel({ model: config.ai.model.gemini });
 
-    // Gemini doesn't support system prompts, prepend to user prompt
     const combinedPrompt = `${systemPrompt}\n\n${userPrompt}`;
     const result = await model.generateContent(combinedPrompt);
     const response = await result.response;
@@ -139,14 +342,8 @@ async function reviewWithGLM(systemPrompt, userPrompt) {
       body: JSON.stringify({
         model: config.ai.model.glm,
         messages: [
-          {
-            role: 'system',
-            content: systemPrompt
-          },
-          {
-            role: 'user',
-            content: userPrompt
-          }
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
         ],
         max_tokens: config.ai.maxResponseTokens,
         temperature: config.ai.temperature
@@ -198,37 +395,42 @@ async function getAIReview(systemPrompt, userPrompt) {
 }
 
 /**
- * Post review comment to PR
+ * Create a PR review with inline comments
  * @param {string} owner - Repository owner
  * @param {string} repo - Repository name
  * @param {number} prNumber - Pull request number
- * @param {string} reviewBody - Review content
- * @param {Object} providerInfo - Provider information
- * @param {Object} compressionInfo - Compression statistics
+ * @param {Object} review - Review object with body, event, comments
+ * @param {string} headSha - Head commit SHA
  */
-async function postReviewComment(owner, repo, prNumber, reviewBody, providerInfo, compressionInfo = null) {
-  let comment = `## 🤖 AI Code Review\n\n`;
+async function createPRReview(owner, repo, prNumber, review, headSha) {
+  // Map comments to diff positions
+  console.log(`📍 Processing ${review.comments.length} inline comments...`);
 
-  if (compressionInfo && config.output.includeCompressionStats) {
-    comment += `> **压缩信息**: 包含 ${compressionInfo.compressedFileCount}/${compressionInfo.originalFileCount} 个文件 (${compressionInfo.compressionRatio})\n\n`;
-    comment += `---\n\n`;
-  }
+  const inlineComments = mapCommentsToPositions(review.comments, review.files);
 
-  comment += `${reviewBody}\n\n`;
+  console.log(`✅ Mapped ${inlineComments.length} comments to diff positions`);
 
-  if (config.output.includeTokenStats) {
-    comment += `---\n\n`;
-    comment += `*This review was generated by [${providerInfo.provider}](${providerInfo.providerUrl})*`;
-  }
-
-  await octokit.rest.issues.createComment({
+  // Build review request body
+  const reviewBody = {
     owner,
     repo,
-    issue_number: prNumber,
-    body: comment
-  });
+    pull_number: prNumber,
+    commit_id: headSha,
+    body: `${review.body}\n\n---\n\n*This review was generated by ${review.providerInfo.provider}*`,
+    event: review.event
+  };
 
-  console.log('✅ Review comment posted successfully');
+  // Add inline comments if we have any
+  if (inlineComments.length > 0) {
+    reviewBody.comments = inlineComments;
+    console.log(`💬 Adding ${inlineComments.length} inline comments to review`);
+  }
+
+  // Create the review
+  const result = await octokit.rest.pulls.createReview(reviewBody);
+
+  console.log(`✅ PR review created with event: ${review.event}`);
+  return result;
 }
 
 /**
@@ -294,19 +496,43 @@ async function main() {
     console.log(`🤖 Requesting AI review (${config.ai.provider})...`);
     const { content, provider, providerUrl } = await getAIReview(prompts.system, prompts.user);
 
-    // Post review as comment
+    // Parse AI response
+    console.log(`📝 Parsing AI response...`);
+    const parsedReview = parseAIResponse(content);
+    parsedReview.providerInfo = { provider, providerUrl };
+    parsedReview.files = compressedPR.files;
+
+    console.log(`   Found ${parsedReview.comments.length} issues`);
+    console.log(`   Review event: ${parsedReview.event}`);
+
+    // Show summary
+    if (parsedReview.comments.length > 0) {
+      console.log(`   Issues by severity:`);
+      const bySeverity = {};
+      parsedReview.comments.forEach(c => {
+        bySeverity[c.severity] = (bySeverity[c.severity] || 0) + 1;
+      });
+      Object.entries(bySeverity).forEach(([severity, count]) => {
+        console.log(`     - ${severity}: ${count}`);
+      });
+    }
+
+    // Create PR review with inline comments
     if (config.github.postComment) {
-      await postReviewComment(
+      await createPRReview(
         REPO_OWNER,
         REPO_NAME,
         parseInt(PR_NUMBER),
-        content,
-        { provider, providerUrl },
-        compressedPR.compressionInfo
+        parsedReview,
+        prDetails.headSha
       );
     } else {
+      // Dry run - just output
       console.log('\n' + '='.repeat(60));
-      console.log(content);
+      console.log('DRY RUN - Would create review:');
+      console.log(`  Event: ${parsedReview.event}`);
+      console.log(`  Body: ${parsedReview.body.substring(0, 100)}...`);
+      console.log(`  Inline comments: ${parsedReview.comments.length}`);
       console.log('='.repeat(60) + '\n');
     }
 
