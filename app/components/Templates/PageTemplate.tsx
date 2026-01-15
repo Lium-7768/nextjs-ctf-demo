@@ -1,26 +1,24 @@
-import { HeroSection, ContentSection, FeaturesSection, TestimonialsSection, CTASection } from '@/components/Sections'
+import { HeroSection, ContentSection, FeaturesSection, TestimonialsSection, CTASection } from '@/app/components/Sections'
 import type { Page } from '@nextjs-ctf-demo/contentful-bff'
 
 export function PageTemplate({
   page,
-  locale,
 }: {
   page: Page
-  locale: string
 }) {
   return (
     <div>
       <div className="bg-white py-20">
         <div className="container mx-auto">
           <h1 className="text-5xl font-bold text-gray-900 mb-8">
-            {page.fields.title[locale]}
+            {page.fields.title}
           </h1>
         </div>
       </div>
-      
-      {page.fields.sections.map((section) => {
+
+      {page.fields.sections?.map((section) => {
         const SectionComponent = getSectionComponent(section.fields.type)
-        return <SectionComponent key={section.sys.id} section={section} locale={locale} />
+        return <SectionComponent key={section.sys.id} section={section} />
       })}
     </div>
   )

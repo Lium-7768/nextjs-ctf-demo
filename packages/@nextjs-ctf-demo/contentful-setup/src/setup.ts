@@ -14,37 +14,36 @@ if (!SPACE_ID) {
 
 export async function setupContentful() {
   console.log('🚀 Setting up Contentful Content Types...')
-  
+
   const client = contentfulManagement.createClient({
-    accessToken: MANAGEMENT_TOKEN,
+    accessToken: MANAGEMENT_TOKEN!,
   })
-  
-  const space = await client.getSpace(SPACE_ID)
+
+  const space = await client.getSpace(SPACE_ID!)
   const environment = await space.getEnvironment('master')
-  
+
   // 创建每个 Content Type
   for (const [key, contentType] of Object.entries(contentTypes)) {
     console.log(`\n📝 Creating ${contentType.name}...`)
-    await createContentType(environment, contentType)
+    await createContentType(environment, contentType, key)
   }
-  
+
   console.log('\n✅ Content Types setup completed!')
 }
 
-async function createContentType(environment: any, definition: any) {
+async function createContentType(environment: any, definition: any, contentTypeId: string) {
   try {
-    // 创建 Content Type
-    const contentType = await environment.createContentType({
+    // 创建 Content Type with ID (先不设置 displayField)
+    const contentType = await environment.createContentTypeWithId(contentTypeId, {
       name: definition.name,
       description: definition.description,
-      displayField: definition.displayField,
     })
-    
-    console.log(`  ✓ Created "${definition.name}"`)
-    
-    // 创建字段
+
+    console.log(`  ✓ Created "${definition.name}" (ID: ${contentTypeId})`)
+
+    // 创建字段 - 使用 fields.push 而不是 createField
     for (const field of definition.fields) {
-      await contentType.createField({
+      contentType.fields.push({
         id: field.id,
         name: field.name,
         type: field.type,
@@ -55,13 +54,22 @@ async function createContentType(environment: any, definition: any) {
         items: field.items,
         linkType: field.linkType,
       })
-      
+
       console.log(`    ✓ Added field: ${field.name}`)
     }
-    
-    // 发布 Content Type
+
+    // 设置 displayField (字段创建后再设置)
+    if (definition.displayField) {
+      contentType.displayField = definition.displayField
+    }
+
+    // 发布 Content Type - 先 update，然后重新获取版本再 publish
     await contentType.update()
-    
+
+    // 获取更新后的 content type
+    const updatedContentType = await environment.getContentType(contentTypeId)
+    await updatedContentType.publish()
+
     console.log(`  ✓ Published "${definition.name}"`)
   } catch (error: any) {
     if (error.message.includes('already exists')) {
@@ -71,3 +79,6 @@ async function createContentType(environment: any, definition: any) {
     }
   }
 }
+
+// Run if called directly
+setupContentful().catch(console.error)

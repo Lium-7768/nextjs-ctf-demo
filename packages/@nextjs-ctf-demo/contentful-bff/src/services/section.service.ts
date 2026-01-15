@@ -4,7 +4,7 @@ export async function getSections(sectionIds?: string[], locale?: string): Promi
   try {
     const query: any = {
       content_type: 'section',
-      order: 'fields.order',
+      order: ['fields.order'],
     }
     
     if (sectionIds && sectionIds.length > 0) {
@@ -14,10 +14,10 @@ export async function getSections(sectionIds?: string[], locale?: string): Promi
     if (locale) {
       query.locale = locale
     }
-    
-    const entries = await contentfulClient.getEntries<Section>(query)
-    
-    return entries.items
+
+    const entries = await contentfulClient.getEntries<any>(query)
+
+    return entries.items as unknown as Section[]
   } catch (error) {
     console.error('Error fetching sections:', error)
     return []
