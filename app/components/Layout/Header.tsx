@@ -10,7 +10,7 @@ export function Header({
   lang: string
 }) {
   return (
-    <header className="border-b bg-white sticky top-0 z-50" style={{ top: 'env(safe-area-inset-top, 0px)' }}>
+    <header className="border-b bg-white dark:bg-gray-900 sticky top-0 z-50" style={{ top: 'env(safe-area-inset-top, 0px)' }}>
       <nav className="container mx-auto px-4 py-4 flex items-center justify-between" aria-label="Main navigation">
         <Link
           href={`/${lang}`}
@@ -26,7 +26,7 @@ export function Header({
             <li key={item.sys.id}>
               <Link
                 href={item.fields.linkTo.replace('[lang]', lang)}
-                className="text-gray-700 hover:text-blue-600 transition-colors rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+                className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
               >
                 {item.fields.label}
               </Link>
