@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Custom ignores:
+    ".github/scripts/**",     // Node.js scripts don't need strict TS/ESLint rules
+    ".claude/skills/**",       // Python skill files
+    "packages/@nextjs-ctf-demo/contentful-setup/**",  // Setup scripts
   ]),
 ]);
 

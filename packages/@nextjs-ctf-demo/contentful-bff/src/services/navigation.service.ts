@@ -2,11 +2,11 @@ import { contentfulClient, type NavigationItem, type GlobalSettings } from '../c
 
 export async function getNavigationItems(locale: string): Promise<NavigationItem[]> {
   try {
-    const entries = await contentfulClient.getEntries<any>({
+    const entries = await contentfulClient.getEntries({
       content_type: 'navigationItem',
       locale: locale,
       order: ['fields.order'],
-    } as any)
+    })
 
     return entries.items as unknown as NavigationItem[]
   } catch (error) {
@@ -17,7 +17,7 @@ export async function getNavigationItems(locale: string): Promise<NavigationItem
 
 export async function getGlobalSettings(locale: string): Promise<GlobalSettings | null> {
   try {
-    const entries = await contentfulClient.getEntries<any>({
+    const entries = await contentfulClient.getEntries({
       content_type: 'globalSettings',
       locale: locale,
       limit: 1,

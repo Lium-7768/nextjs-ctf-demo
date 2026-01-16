@@ -325,7 +325,7 @@ export async function seedContentful() {
   const heroSection = await environment.createEntry('section', {
     fields: {
       type: { 'en-US': 'hero' },
-      heading: { 'en-US': 'Build the Future' },
+      heading: { 'en-US': 'Build Your Future' },
       description: {
         'en-US': await documentToRichText('Innovation meets excellence. We are committed to delivering cutting-edge solutions that transform businesses worldwide.'),
       },
@@ -365,7 +365,7 @@ export async function seedContentful() {
       type: { 'en-US': 'testimonials' },
       heading: { 'en-US': 'What Our Clients Say' },
       description: {
-        'en-US': await documentToRichText('Don\'t just take our word for it. Here\'s what our customers have to say.'),
+        'en-US': await documentToRichText("Don't just take our word for it. Here's what our customers have to say."),
       },
       testimonials: { 'en-US': testimonials.map(t => ({ sys: t.sys })) },
       order: { 'en-US': 4 },
@@ -493,7 +493,7 @@ export async function seedContentful() {
   const navData = [
     { label: 'Home', linkTo: '/[lang]/', order: 1 },
     { label: 'Services', linkTo: '/[lang]/services', order: 2 },
-    { label: 'Pricing', linkTo: '/[lang]/pricing', order: 3 },
+    { label: 'Pricing', linkTo: '/[lang]/pricing', order:3 },
     { label: 'FAQ', linkTo: '/[lang]/faq', order: 4 },
   ]
 
@@ -541,13 +541,14 @@ export async function seedContentful() {
   console.log('  - 6 Features')
   console.log('  - 6 Services')
   console.log('  - 3 Testimonials')
-  console.log('  - 3 Pricing Plans')
-  console.log('  - 6 FAQ Entries')
-  console.log('  - 7 Sections')
+  console.log(' - 3 Pricing Plans')
+  console.log(' - 6 FAQ Entries')
+  console.log(' - 7 Sections')
   console.log('  - 4 Pages')
   console.log('  - 4 Navigation Items')
   console.log('  - 1 Global Settings')
 }
 
-// Run if called directly
+  // Run if called directly
 seedContentful().catch(console.error)
+}

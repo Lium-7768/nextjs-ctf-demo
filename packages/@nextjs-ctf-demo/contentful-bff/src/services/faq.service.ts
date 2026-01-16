@@ -2,7 +2,7 @@ import { contentfulClient, type FAQ } from '../client'
 
 export async function getFAQs(locale: string, category?: string): Promise<FAQ[]> {
   try {
-    const query: any = {
+    const query: Record<string, unknown> = {
       content_type: 'faq',
       locale: locale,
       order: ['fields.order'],
@@ -12,7 +12,7 @@ export async function getFAQs(locale: string, category?: string): Promise<FAQ[]>
       query['fields.category'] = category
     }
 
-    const entries = await contentfulClient.getEntries<any>(query)
+    const entries = await contentfulClient.getEntries(query)
 
     return entries.items as unknown as FAQ[]
   } catch (error) {

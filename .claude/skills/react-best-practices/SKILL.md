@@ -63,7 +63,7 @@ Reference these guidelines when:
 ### 5. Re-render Optimization (MEDIUM)
 
 - `rerender-defer-reads` - Don't subscribe to state only used in callbacks
-- `rerender-memo` - Extract expensive work into memoized components
+- `rerender-memo` - Use React.memo for components with stable props to prevent unnecessary re-renders
 - `rerender-dependencies` - Use primitive dependencies in effects
 - `rerender-derived-state` - Subscribe to derived booleans, not raw values
 - `rerender-functional-setstate` - Use functional setState for stable callbacks
