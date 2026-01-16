@@ -252,33 +252,24 @@ function findPositionInDiff(filePath, lineNumber, files) {
   if (!file || !file.patch) return null;
 
   const patchLines = file.patch.split('\n');
-  let currentLineInNewFile = 0;
   let position = 0;
+  let addedLineCount = 0; // Count of added lines (+ lines) seen so far
 
   for (const patchLine of patchLines) {
-    // Match hunk header: @@ -old_start,old_count +new_start,new_count @@
-    const hunkMatch = patchLine.match(/^@@\s+-\d+(?:,\d+)?\s+\+(\d+)(?:,(\d+))?/);
-    if (hunkMatch) {
-      currentLineInNewFile = parseInt(hunkMatch[1], 10);
-      // position continues counting from previous hunk
+    // Skip hunk headers
+    if (patchLine.startsWith('@@')) {
+      position = 0; // Reset position counter for new hunk
       continue;
     }
 
     // Increment position for each line in the diff
     position++;
 
-    // Track new file lines
+    // Only count added lines (+) for position mapping
     if (patchLine.startsWith('+') && !patchLine.startsWith('++')) {
-      currentLineInNewFile++;
-      if (currentLineInNewFile === lineNumber) {
-        return { path: filePath, position };
-      }
-    }
-
-    // Track unchanged lines
-    if (patchLine.startsWith(' ')) {
-      currentLineInNewFile++;
-      if (currentLineInNewFile === lineNumber) {
+      addedLineCount++;
+      // AI reports the Nth added line as line number
+      if (addedLineCount === lineNumber) {
         return { path: filePath, position };
       }
     }
@@ -502,6 +493,12 @@ async function createPRReview(owner, repo, prNumber, review, headSha) {
   const inlineComments = mapCommentsToPositions(review.comments, review.files);
 
   console.log(`✅ Mapped ${inlineComments.length} comments to diff positions`);
+
+  // If no inline comments could be mapped and no body, skip review creation
+  if (inlineComments.length === 0 && (!review.body || review.body.trim().length === 0)) {
+    console.log('⚠️  No mappable comments and no body, skipping review creation');
+    return null;
+  }
 
   // Build review request body
   const reviewBody = {

@@ -182,6 +182,8 @@ class PromptBuilder {
       return section;
     }
 
+    section += '**重要**: 报告问题时，只引用 diff 中以 `+` 开头的**新增行**。\n\n';
+
     compressedPR.files.forEach((file, index) => {
       section += `## ${index + 1}. ${file.filename}\n\n`;
       section += `**状态**: ${file.status} | **变更**: ${file.changes} 行 (${file.additions}+/${file.deletions}-)\n\n`;
