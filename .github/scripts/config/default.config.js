@@ -18,7 +18,7 @@ module.exports = {
     maxFiles: parseInt(process.env.PR_MAX_FILES) || 15,
 
     // File patterns to exclude from review
-    excludePatterns: (process.env.PR_EXCLUDE_PATTERNS || 'node_modules,dist,build,.next,coverage,*.min.js,*.min.css,package-lock.json,yarn.lock,bun.lock,*.log,.env').split(','),
+    excludePatterns: (process.env.PR_EXCLUDE_PATTERNS || 'node_modules,dist,build,.next,coverage,*.min.js,*.min.css,package-lock.json,yarn.lock,bun.lock,*.log,.env,.github/scripts').split(','),
   },
 
   // AI Provider Configuration
