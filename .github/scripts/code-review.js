@@ -221,10 +221,16 @@ function buildIssueComment(issue) {
     body += `**理由**: ${issue.reason}`;
   }
 
+  // Fix incorrect src/ prefix if AI added it
+  let filePath = issue.file;
+  if (filePath && filePath.startsWith('src/')) {
+    filePath = filePath.slice(4);
+  }
+
   return {
     severity: issue.severity,
     title: issue.title,
-    file: issue.file,
+    file: filePath,
     line: issue.line,
     body: body.trim()
   };
