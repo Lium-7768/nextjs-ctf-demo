@@ -80,7 +80,7 @@ class PRCompressor {
 
   /**
    * Glob pattern matching using native JavaScript
-   * Handles app directory patterns, file extensions, and directory names
+   * Handles app directory patterns, file extensions, and directory paths
    * @param {string} pattern - Glob pattern to match
    * @param {string} filename - File path to test
    * @returns {boolean} Whether the file matches the pattern
@@ -100,9 +100,11 @@ class PRCompressor {
       return filename.endsWith('.' + ext);
     }
 
-    // Handle directory blacklist (node_modules, .github, .claude, etc.)
-    if (!pattern.includes('*') && !pattern.includes('.') && !pattern.includes('/')) {
-      return filename.includes(pattern + '/');
+    // Handle directory paths like .github/scripts, .claude, node_modules
+    // Check if file is under the specified directory
+    if (pattern.includes('/') || (!pattern.includes('*') && !pattern.startsWith('*.'))) {
+      // Check exact match or directory prefix
+      return filename === pattern || filename.startsWith(pattern + '/');
     }
 
     return false;
