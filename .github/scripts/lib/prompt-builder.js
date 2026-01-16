@@ -183,24 +183,38 @@ class PromptBuilder {
     }
 
     section += '**⚠️ 行号计数规则（非常重要）**:\n';
-    section += '```diff\n';
-    section += '  line 1    <- 普通行，不计入\n';
-    section += '+ added 1  <- 这是第 1 个新增行，报告 file.ts:1\n';
-    section += '  line 2    <- 普通行，不计入\n';
-    section += '- removed   <- 删除行，不计入\n';
-    section += '+ added 2  <- 这是第 2 个新增行，报告 file.ts:2\n';
-    section += '+ added 3  <- 这是第 3 个新增行，报告 file.ts:3\n';
-    section += '```\n\n';
-    section += '**只计算以 + 开头的行，从 1 开始计数**。\n\n';
+    section += '- 只计算以 `+` 开头的新增行\n';
+    section += '- 从 1 开始计数，不是 0\n';
+    section += '- 不要计算删除行（`-` 开头）或普通行（空格开头）\n';
+    section += '- 报告问题时使用：`文件路径:行号`，行号是第几个 + 行\n\n';
 
     compressedPR.files.forEach((file, index) => {
       section += `## ${index + 1}. ${file.filename}\n\n`;
       section += `**状态**: ${file.status} | **变更**: ${file.changes} 行 (${file.additions}+/${file.deletions}-)\n\n`;
 
+      // Pre-count and label the added lines
+      if (file.patch && file.additions > 0) {
+        const patchLines = file.patch.split('\n');
+        let addedLineCount = 0;
+        const labeledPatch = patchLines.map(line => {
+          if (line.startsWith('+') && !line.startsWith('++')) {
+            addedLineCount++;
+            return `+ [第${addedLineCount}行] ${line.slice(1)}`;
+          }
+          return line;
+        }).join('\n');
+
+        section += '**标注的新增行** (第几个 + 行):\n';
+        section += '```diff\n';
+        section += labeledPatch;
+        section += '\n```\n\n';
+      }
+
       if (file.isSummary) {
         section += `*注: 此文件内容较多，显示部分内容 (共 ${file.originalLines} 行)*\n\n`;
       }
 
+      section += '**完整 diff**:\n';
       section += '```diff\n';
       section += file.patch || '(无变更)';
       section += '\n```\n\n';
