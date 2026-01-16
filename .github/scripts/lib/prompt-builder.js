@@ -208,14 +208,16 @@ class PromptBuilder {
   formatReviewGuidelines(categories) {
     let section = '---\n\n# 审查要求\n\n';
     section += '**重要**: 请严格按照以下格式输出，每个问题必须包含代码对比示例。\n\n';
+    section += '**⚠️ 行号规则**: 位置中的数字必须是 diff 中以 + 开头的新增行的序号，从 1 开始计数。\n';
+    section += '例如：如果 diff 有 3 个 + 行，报告 `app/file.ts:2` 表示第 2 个 + 行。\n\n';
     section += '```markdown\n';
     section += '## 发现的问题 (共 N 个)\n\n';
     section += '### [严重级别] 问题标题\n';
-    section += '- **位置**: `src/file.ts:42`\n';
+    section += '- **位置**: `app/components/Example.tsx:1` （diff 中第 1 个 + 行）\n';
     section += '- **问题**: [具体描述问题]\n\n';
     section += '**❌ 错误代码**:\n';
     section += '```tsx\n';
-    section += '[从 diff 中提取的问题代码]\n';
+    section += '[完全复制 diff 中该行的内容，以 + 开头]\n';
     section += '```\n\n';
     section += '**✅ 正确代码**:\n';
     section += '```tsx\n';
@@ -223,8 +225,6 @@ class PromptBuilder {
     section += '```\n\n';
     section += '**理由**: [解释为什么这样是最佳实践，引用相关文档]\n\n';
     section += '---\n\n';
-    section += '## 总体建议\n';
-    section += '[整体性的架构或流程建议]\n';
     section += '```\n\n';
 
     section += '**审查重点**:\n';
@@ -232,7 +232,7 @@ class PromptBuilder {
       section += `- **${cat.name}**: ${cat.description}\n`;
     });
 
-    section += '\n**注意**: 不要输出"优点"部分，只输出问题。';
+    section += '\n**注意**: 不要输出"优点"或"总体建议"部分，只输出具体问题。';
 
     return section;
   }
