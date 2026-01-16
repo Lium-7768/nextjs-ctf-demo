@@ -124,7 +124,10 @@ class PRCompressor {
     const additionRatio = file.additions / (file.changes || 1);
     const additionWeight = additionRatio * 5;
 
-    return langPriority + changeWeight + additionWeight;
+    // Bonus for files in app/ directory (main application code)
+    const appDirBonus = file.filename.startsWith('app/') ? 20 : 0;
+
+    return langPriority + changeWeight + additionWeight + appDirBonus;
   }
 
   /**
