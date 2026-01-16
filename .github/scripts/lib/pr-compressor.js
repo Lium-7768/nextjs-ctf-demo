@@ -80,7 +80,7 @@ class PRCompressor {
 
   /**
    * Simple glob pattern matching
-   * @param {string} pattern - Glob pattern (e.g., "app/**/*.tsx")
+   * @param {string} pattern - Glob pattern
    * @param {string} filename - File path to test
    * @returns {boolean} Whether the file matches the pattern
    */
