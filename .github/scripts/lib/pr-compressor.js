@@ -11,6 +11,7 @@ class PRCompressor {
     this.maxTokens = options.maxTokens || 8000;
     this.languagePriority = options.languagePriority || ['ts', 'tsx', 'js', 'jsx', 'py', 'go', 'rs'];
     this.excludePatterns = options.excludePatterns || [];
+    this.includePatterns = options.includePatterns || [];
     this.maxFiles = options.maxFiles || 15;
     this.tokenEstimator = new TokenEstimator();
   }
@@ -57,6 +58,18 @@ class PRCompressor {
    */
   filterFiles(files) {
     return files.filter(file => {
+      // If includePatterns is specified, only include matching files
+      if (this.includePatterns.length > 0) {
+        const isIncluded = this.includePatterns.some(pattern => {
+          if (pattern.includes('*')) {
+            const regex = new RegExp('^' + pattern.replace('*', '.*'));
+            return regex.test(file.filename);
+          }
+          return file.filename.includes(pattern);
+        });
+        if (!isIncluded) return false;
+      }
+
       // Check if file should be excluded
       const isExcluded = this.excludePatterns.some(pattern => {
         if (pattern.includes('*')) {
