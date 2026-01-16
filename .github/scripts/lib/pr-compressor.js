@@ -61,22 +61,14 @@ class PRCompressor {
       // If includePatterns is specified, only include matching files
       if (this.includePatterns.length > 0) {
         const isIncluded = this.includePatterns.some(pattern => {
-          if (pattern.includes('*')) {
-            const regex = new RegExp('^' + pattern.replace('*', '.*'));
-            return regex.test(file.filename);
-          }
-          return file.filename.includes(pattern);
+          return this.globMatch(pattern, file.filename);
         });
         if (!isIncluded) return false;
       }
 
       // Check if file should be excluded
       const isExcluded = this.excludePatterns.some(pattern => {
-        if (pattern.includes('*')) {
-          const regex = new RegExp(pattern.replace('*', '.*'));
-          return regex.test(file.filename);
-        }
-        return file.filename.includes(pattern);
+        return this.globMatch(pattern, file.filename);
       });
 
       // Exclude files with no changes
@@ -84,6 +76,30 @@ class PRCompressor {
 
       return !isExcluded && hasChanges;
     });
+  }
+
+  /**
+   * Simple glob pattern matching
+   * @param {string} pattern - Glob pattern (e.g., "app/**/*.tsx")
+   * @param {string} filename - File path to test
+   * @returns {boolean} Whether the file matches the pattern
+   */
+  globMatch(pattern, filename) {
+    // Convert glob pattern to regex
+    let regexPattern = pattern
+      // Escape special regex characters except *, ?, {, }
+      .replace(/[.+^${}()|[\]\\]/g, '\\$&')
+      // Convert ** to any path
+      .replace(/\*\*/g, '.*')
+      // Convert * to any non-slash characters
+      .replace(/(?<!\.)\*/g, '[^/]*')
+      // Convert {a,b} to (a|b)
+      .replace(/\{([^}]+)\}/g, '($1)')
+      // Ensure pattern matches the entire string
+      .replace(/^/, '^')
+      .replace(/$/, '$');
+
+    return new RegExp(regexPattern).test(filename);
   }
 
   /**
