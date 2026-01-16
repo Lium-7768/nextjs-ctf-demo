@@ -29,7 +29,7 @@ export default async function LangLayout({
         Skip to main content
       </a>
       <Header navItems={navItems} lang={lang} />
-      <main id="main-content" className="main-content-scroll-margin" style={{ display: 'none' }}>{children}</main>
+      <main id="main-content" className="main-content-scroll-margin">{children}</main>
       <Footer settings={settings} lang={lang} />
     </>
   )
