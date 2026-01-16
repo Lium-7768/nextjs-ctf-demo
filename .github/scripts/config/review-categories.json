@@ -18,9 +18,9 @@
       {
         "id": "react_inline_styles",
         "name": "React - 避免内联样式",
-        "description": "检查是否使用了内联 style 属性",
+        "description": "检查是否使用了内联 style 属性，这是 React 性能最佳实践的严重违规",
         "severity": "warning",
-        "prompt_template": "检查以下代码中的内联样式：\n\n**问题**: 内联 style 对象会在每次渲染时创建新对象，影响性能且无法被浏览器优化。\n\n**查找**: `style={{ ... }}` 或 `style=\"...\"`\n\n**修复方案**: 使用 Tailwind CSS 类或 CSS Modules\n\n代码：\n{diff}"
+        "prompt_template": "**重要**: 必须检查以下代码中的所有内联样式！\n\n**问题**: 内联 style 对象会在每次渲染时创建新对象，导致不必要的重渲染，影响性能。\n\n**必须查找的模式**:\n- `style={{ ... }}` - JSX 中的对象样式\n- `style=\"...\"` - JSX 中的字符串样式\n- 任何 `style={` 开头的代码\n\n**修复方案**: 使用 Tailwind CSS 类或 CSS Modules 替代\n\n代码：\n{diff}\n\n**注意**: 即使是简单的样式如 `style={{ display: 'none' }}` 也应该用 `className=\"hidden\"` 替代。"
       },
       {
         "id": "react_emojis",

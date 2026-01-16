@@ -633,13 +633,18 @@ async function main() {
 
     // Create PR review with inline comments
     if (config.github.postComment) {
-      await createPRReview(
-        REPO_OWNER,
-        REPO_NAME,
-        parseInt(PR_NUMBER),
-        parsedReview,
-        prDetails.headSha
-      );
+      // Only post review if there are actual issues or suggestions
+      if (parsedReview.comments.length > 0 || parsedReview.body && !parsedReview.body.includes('请查看代码中的具体评论')) {
+        await createPRReview(
+          REPO_OWNER,
+          REPO_NAME,
+          parseInt(PR_NUMBER),
+          parsedReview,
+          prDetails.headSha
+        );
+      } else {
+        console.log('✅ No issues found, skipping review post');
+      }
     } else {
       // Dry run - just output
       console.log('\n' + '='.repeat(60));
