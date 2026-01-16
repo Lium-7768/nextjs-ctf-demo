@@ -9,16 +9,19 @@ module.exports = {
   // Compression Configuration
   compression: {
     // Maximum tokens for the compressed PR content
-    maxTokens: parseInt(process.env.PR_MAX_TOKENS) || 8000,
+    maxTokens: parseInt(process.env.PR_MAX_TOKENS) || 12000,
 
     // Language priority (higher priority = processed first)
     languagePriority: (process.env.PR_LANGUAGE_PRIORITY || 'ts,tsx,js,jsx,py,go,rs').split(','),
 
     // Maximum number of files to include
-    maxFiles: parseInt(process.env.PR_MAX_FILES) || 15,
+    maxFiles: parseInt(process.env.PR_MAX_FILES) || 25,
 
     // File patterns to exclude from review
-    excludePatterns: (process.env.PR_EXCLUDE_PATTERNS || 'node_modules,dist,build,.next,coverage,*.min.js,*.min.css,package-lock.json,yarn.lock,bun.lock,*.log,.env').split(','),
+    excludePatterns: (process.env.PR_EXCLUDE_PATTERNS || 'node_modules,dist,build,.next,coverage,*.min.js,*.min.css,package-lock.json,yarn.lock,bun.lock,*.log,.env,.github/scripts,.claude,*.css,*.json,*.md,*.lock').split(','),
+
+    // Only include app/ directory files
+    includePatterns: (process.env.PR_INCLUDE_PATTERNS || 'app/**/*.{tsx,ts,jsx,js}').split(','),
   },
 
   // AI Provider Configuration

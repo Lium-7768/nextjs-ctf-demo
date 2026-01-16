@@ -8,15 +8,20 @@ export function PageTemplate({
   page: Page
   lang: string
 }) {
+  const firstSectionType = page.fields.sections?.[0]?.fields.type
+  const hasHero = firstSectionType === 'hero'
+
   return (
     <div>
-      <div className="bg-white py-20">
-        <div className="container mx-auto">
-          <h1 className="text-5xl font-bold text-gray-900 mb-8">
-            {page.fields.title}
-          </h1>
+      {!hasHero && (
+        <div className="bg-white dark:bg-gray-900 py-20">
+          <div className="container mx-auto">
+            <h1 className="text-5xl font-bold text-gray-900 dark:text-gray-100 mb-8">
+              {page.fields.title}
+            </h1>
+          </div>
         </div>
-      </div>
+      )}
 
       {page.fields.sections?.map((section) => {
         const SectionComponent = getSectionComponent(section.fields.type)

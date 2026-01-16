@@ -16,34 +16,69 @@
         "prompt_template": "从 Bug 识别角度审查以下代码：\n\n重点关注：\n- 空指针/未定义引用\n- 边界条件和异常处理\n- 竞态条件和并发问题\n- 内存泄漏和资源管理\n- 类型不匹配和转换错误\n\n代码：\n{diff}"
       },
       {
-        "id": "code_quality",
-        "name": "代码质量",
-        "description": "检查代码质量和最佳实践",
-        "severity": "info",
-        "prompt_template": "从代码质量角度审查以下代码：\n\n重点关注：\n- 命名规范和可读性\n- 代码重复和 DRY 原则\n- 函数复杂度和职责分离\n- 错误处理机制\n- 类型安全和类型定义\n- 注释和文档\n\n代码：\n{diff}"
+        "id": "react_inline_styles",
+        "name": "React - 避免内联样式",
+        "description": "检查是否使用了内联 style 属性，这是 React 性能最佳实践的严重违规",
+        "severity": "warning",
+        "prompt_template": "**任务**: 找出以下 diff 中所有新增的（以 + 开头）内联样式。\n\n**必须检查的模式**:\n- `style={{` - 内联对象样式\n- `style=\"` - 内联字符串样式\n- 任何包含 `style` 的 JSX 属性\n\n**重要**:\n- 只报告以 `+` 开头的新增行中的内联样式\n- 如果某行删除了内联样式（以 - 开头），这是修复，不要报告\n- 仔细检查每一行，不要遗漏\n\n**修复方案**: 使用 Tailwind CSS 类或 CSS Modules 替代\n\n代码：\n{diff}"
       },
       {
-        "id": "performance",
-        "name": "性能分析",
-        "description": "检查性能问题和优化机会",
+        "id": "react_emojis",
+        "name": "React - 避免使用 Emoji",
+        "description": "检查是否在 UI 中使用了 emoji",
+        "severity": "info",
+        "prompt_template": "检查以下代码中的 emoji 使用：\n\n**问题**: Emoji 在不同平台渲染不一致，可访问性差，国际化问题。\n\n**查找**: 任何 emoji 字符（🚀、✅、❌ 等）\n\n**修复方案**: 使用图标库（lucide-react、heroicons 等）\n\n代码：\n{diff}"
+      },
+      {
+        "id": "react_performance",
+        "name": "React - 性能优化",
+        "description": "React 性能最佳实践",
         "severity": "warning",
-        "prompt_template": "从性能角度审查以下代码：\n\n重点关注：\n- 算法复杂度和效率\n- 不必要的循环或计算\n- 内存使用和优化机会\n- 数据库查询效率（N+1 问题）\n- 缓存机会\n- React/前端性能（渲染优化）\n\n代码：\n{diff}"
+        "prompt_template": "从 React 性能角度审查代码：\n\n**检查项**:\n- 不必要的 useEffect 依赖\n- 缺少 useMemo/useCallback 的优化\n- 组件未使用 React.memo 但频繁重渲染\n- 列表渲染缺少 key 或 key 使用不当\n- 在渲染中创建新函数/对象\n- 大型组件未拆分\n- 使用内联函数作为 props\n\n代码：\n{diff}"
+      },
+      {
+        "id": "react_hooks",
+        "name": "React - Hooks 最佳实践",
+        "description": "React Hooks 使用规范",
+        "severity": "warning",
+        "prompt_template": "检查 React Hooks 使用：\n\n**检查项**:\n- useEffect 缺少依赖或依赖过多\n- 在条件/循环中使用 hooks\n- 自定义 hook 没有以 use 开头\n- useState 初始值计算昂贵但未使用函数初始化\n- 过时的闭包问题\n\n代码：\n{diff}"
+      },
+      {
+        "id": "react_accessibility",
+        "name": "React - 可访问性",
+        "description": "React 组件可访问性检查",
+        "severity": "warning",
+        "prompt_template": "检查 React 组件的可访问性：\n\n**检查项**:\n- 交互元素缺少 aria-label\n- 图片缺少 alt 属性\n- 颜色对比度不足\n- 键盘导航支持\n- focus 状态可见\n- 语义化 HTML 使用\n- 跳过导航链接\n\n代码：\n{diff}"
       },
       {
         "id": "typescript",
         "name": "TypeScript 类型",
         "description": "TypeScript 类型安全和最佳实践",
         "severity": "info",
-        "prompt_template": "从 TypeScript 类型安全角度审查以下代码：\n\n重点关注：\n- 类型定义是否完整准确\n- 避免使用 any\n- 正确使用泛型\n- 类型断言是否必要\n- 接口和类型定义的合理性\n\n代码：\n{diff}"
+        "prompt_template": "从 TypeScript 类型安全角度审查以下代码：\n\n**检查项**:\n- 类型定义是否完整准确\n- 避免使用 any\n- 正确使用泛型\n- 类型断言是否必要\n- 接口和类型定义的合理性\n- 使用 unknown 代替 any\n- 严格的 null 检查\n\n代码：\n{diff}"
+      },
+      {
+        "id": "code_quality",
+        "name": "代码质量",
+        "description": "检查代码质量和最佳实践",
+        "severity": "info",
+        "prompt_template": "从代码质量角度审查以下代码：\n\n**检查项**:\n- 命名规范和可读性\n- 代码重复和 DRY 原则\n- 函数复杂度和职责分离\n- 错误处理机制\n- 魔法数字和常量提取\n- 函数参数数量（建议不超过 4 个）\n\n代码：\n{diff}"
+      },
+      {
+        "id": "performance",
+        "name": "性能分析",
+        "description": "检查性能问题和优化机会",
+        "severity": "warning",
+        "prompt_template": "从性能角度审查以下代码：\n\n**检查项**:\n- 算法复杂度和效率\n- 不必要的循环或计算\n- 内存使用和优化机会\n- 数据库查询效率（N+1 问题）\n- 缓存机会\n- 大文件处理优化\n\n代码：\n{diff}"
       },
       {
         "id": "testing",
         "name": "测试覆盖",
         "description": "检查测试覆盖率和质量",
         "severity": "info",
-        "prompt_template": "从测试角度审查以下代码：\n\n重点关注：\n- 是否缺少必要的测试\n- 测试用例的完整性\n- 边界条件是否被测试\n- 错误路径是否被覆盖\n- 测试的可维护性\n\n代码：\n{diff}"
+        "prompt_template": "从测试角度审查以下代码：\n\n**检查项**:\n- 是否缺少必要的测试\n- 测试用例的完整性\n- 边界条件是否被测试\n- 错误路径是否被覆盖\n- 测试的可维护性\n\n代码：\n{diff}"
       }
     ]
   },
-  "system_prompt": "你是一个严格的专业代码审查 AI 助手。\n\n**核心原则**：\n1. 只指出真正的问题，不需要夸奖或表扬\n2. 每个问题必须提供符合行业最佳实践的具体修复方案\n3. 使用 file:line 格式精确引用问题代码\n4. 用简洁的中文回复\n\n**输出要求**：\n- 对于每个问题，提供可以直接复制的修复代码\n- 引用相关官方文档或行业标准（如 OWASP、React 官方文档等）\n- 不要输出\"优点\"部分\n\n**输出格式**：\n```markdown\n## 发现的问题 (共 N 个)\n\n### [严重级别] 问题标题\n- **位置**: src/file.ts:42\n- **违反**: 最佳实践/安全标准/性能原则\n- **修复方案**:\n\\`\\`\\`typescript\n[具体的修复代码]\n\\`\\`\\`\n- **理由**: [为什么这样改是最佳实践]\n\n## 总体建议\n[整体性的架构或流程建议]\n```"
+  "system_prompt": "你是一个严格的专业代码审查 AI 助手。\n\n**项目类型**: 这是一个 Next.js 16 + React 19 项目，使用 TypeScript、Tailwind CSS 和 JSX/TSX。\n\n**重要**: JSX 中的组件（如 `<Icon />`）是 React 标准用法，不是「在 HTML 中使用 JavaScript」。\n\n**核心原则**：\n1. 只指出真正的问题，不需要夸奖或表扬\n2. 每个问题必须提供符合行业最佳实践的具体修复方案\n3. 使用 file:line 格式精确引用问题代码\n4. 用简洁的中文回复\n\n**行号说明**：\n- line 数字是该文件 diff 中**第 N 个新增行**（`+` 开头的行）的序号\n- 例如：如果某个文件的 diff 有 5 个 `+` 行，报告 `file.ts:3` 表示第 3 个 `+` 行\n- 只引用新增的代码行，不要引用删除的行\n\n**审查要求**：\n- 必须准确识别问题代码，不要编造或猜测\n- 如果代码中没有问题，就报告「没有发现问题」\n- 引用的错误代码必须完全匹配 diff 中的内容\n- 正确代码必须可以直接复制使用\n- **不要输出「总体建议」部分**\n- React 组件的使用是正确的，不要误报\n\n**输出格式**：\n```markdown\n## 发现的问题 (共 N 个)\n\n### [严重级别] 问题标题\n- **位置**: `src/file.ts:3` （第 3 个新增行）\n- **问题**: [具体描述]\n\n**❌ 错误代码**:\n```tsx\n[完全匹配 diff 中的 + 行内容]\n```\n\n**✅ 正确代码**:\n```tsx\n[修复后的代码]\n```\n\n**理由**: [为什么这样是最佳实践]\n\n---\n```"
 }

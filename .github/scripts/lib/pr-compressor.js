@@ -11,6 +11,7 @@ class PRCompressor {
     this.maxTokens = options.maxTokens || 8000;
     this.languagePriority = options.languagePriority || ['ts', 'tsx', 'js', 'jsx', 'py', 'go', 'rs'];
     this.excludePatterns = options.excludePatterns || [];
+    this.includePatterns = options.includePatterns || [];
     this.maxFiles = options.maxFiles || 15;
     this.tokenEstimator = new TokenEstimator();
   }
@@ -57,13 +58,17 @@ class PRCompressor {
    */
   filterFiles(files) {
     return files.filter(file => {
+      // If includePatterns is specified, only include matching files
+      if (this.includePatterns.length > 0) {
+        const isIncluded = this.includePatterns.some(pattern => {
+          return this.globMatch(pattern, file.filename);
+        });
+        if (!isIncluded) return false;
+      }
+
       // Check if file should be excluded
       const isExcluded = this.excludePatterns.some(pattern => {
-        if (pattern.includes('*')) {
-          const regex = new RegExp(pattern.replace('*', '.*'));
-          return regex.test(file.filename);
-        }
-        return file.filename.includes(pattern);
+        return this.globMatch(pattern, file.filename);
       });
 
       // Exclude files with no changes
@@ -71,6 +76,36 @@ class PRCompressor {
 
       return !isExcluded && hasChanges;
     });
+  }
+
+  /**
+   * Glob pattern matching using native JavaScript
+   * Handles app directory patterns, file extensions, and directory names
+   * @param {string} pattern - Glob pattern to match
+   * @param {string} filename - File path to test
+   * @returns {boolean} Whether the file matches the pattern
+   */
+  globMatch(pattern, filename) {
+    // Handle app/**/*.{tsx,ts,jsx,js} pattern (include business code only)
+    if (pattern.includes('app/') && pattern.includes('{')) {
+      const isInApp = filename.startsWith('app/');
+      const allowedExts = ['tsx', 'ts', 'jsx', 'js'];
+      const ext = filename.split('.').pop();
+      return isInApp && allowedExts.includes(ext);
+    }
+
+    // Handle *.css, *.json, *.md, etc. (blacklist file extensions)
+    if (pattern.startsWith('*.')) {
+      const ext = pattern.slice(2);
+      return filename.endsWith('.' + ext);
+    }
+
+    // Handle directory blacklist (node_modules, .github, .claude, etc.)
+    if (!pattern.includes('*') && !pattern.includes('.') && !pattern.includes('/')) {
+      return filename.includes(pattern + '/');
+    }
+
+    return false;
   }
 
   /**
@@ -124,7 +159,10 @@ class PRCompressor {
     const additionRatio = file.additions / (file.changes || 1);
     const additionWeight = additionRatio * 5;
 
-    return langPriority + changeWeight + additionWeight;
+    // Bonus for files in app/ directory (main application code)
+    const appDirBonus = file.filename.startsWith('app/') ? 20 : 0;
+
+    return langPriority + changeWeight + additionWeight + appDirBonus;
   }
 
   /**

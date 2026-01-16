@@ -182,6 +182,8 @@ class PromptBuilder {
       return section;
     }
 
+    section += '**重要**: 报告问题时，只引用 diff 中以 `+` 开头的**新增行**。\n\n';
+
     compressedPR.files.forEach((file, index) => {
       section += `## ${index + 1}. ${file.filename}\n\n`;
       section += `**状态**: ${file.status} | **变更**: ${file.changes} 行 (${file.additions}+/${file.deletions}-)\n\n`;
@@ -205,25 +207,32 @@ class PromptBuilder {
    */
   formatReviewGuidelines(categories) {
     let section = '---\n\n# 审查要求\n\n';
-    section += '请按照以下格式输出审查结果：\n\n';
+    section += '**重要**: 请严格按照以下格式输出，每个问题必须包含代码对比示例。\n\n';
     section += '```markdown\n';
-    section += '## 审查摘要\n';
-    section += '简要总结本次变更的目的和主要内容\n\n';
-    section += '## 发现的问题\n';
+    section += '## 发现的问题 (共 N 个)\n\n';
     section += '### [严重级别] 问题标题\n';
-    section += '- **位置**: file:line\n';
-    section += '- **问题**: 具体问题描述\n';
-    section += '- **建议**: 改进建议\n\n';
-    section += '## 优点\n';
-    section += '列出做得好的地方\n\n';
+    section += '- **位置**: `src/file.ts:42`\n';
+    section += '- **问题**: [具体描述问题]\n\n';
+    section += '**❌ 错误代码**:\n';
+    section += '```tsx\n';
+    section += '[从 diff 中提取的问题代码]\n';
+    section += '```\n\n';
+    section += '**✅ 正确代码**:\n';
+    section += '```tsx\n';
+    section += '[修复后的代码，可直接复制使用]\n';
+    section += '```\n\n';
+    section += '**理由**: [解释为什么这样是最佳实践，引用相关文档]\n\n';
+    section += '---\n\n';
     section += '## 总体建议\n';
-    section += '整体性的建议和注意事项\n';
+    section += '[整体性的架构或流程建议]\n';
     section += '```\n\n';
 
-    section += '**请特别关注以下方面**:\n';
+    section += '**审查重点**:\n';
     categories.forEach(cat => {
       section += `- **${cat.name}**: ${cat.description}\n`;
     });
+
+    section += '\n**注意**: 不要输出"优点"部分，只输出问题。';
 
     return section;
   }
