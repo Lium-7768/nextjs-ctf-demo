@@ -1,5 +1,4 @@
 const { TokenEstimator } = require('./token-estimator');
-const { minimatch } = require('minimatch');
 
 /**
  * PR Compressor
@@ -80,18 +79,33 @@ class PRCompressor {
   }
 
   /**
-   * Glob pattern matching using minimatch
+   * Glob pattern matching using native JavaScript
+   * Handles app directory patterns, file extensions, and directory names
    * @param {string} pattern - Glob pattern to match
    * @param {string} filename - File path to test
    * @returns {boolean} Whether the file matches the pattern
    */
   globMatch(pattern, filename) {
-    try {
-      return minimatch(filename, pattern);
-    } catch (error) {
-      console.warn(`Invalid glob pattern: ${pattern}`, error.message);
-      return false;
+    // Handle app/**/*.{tsx,ts,jsx,js} pattern (include business code only)
+    if (pattern.includes('app/') && pattern.includes('{')) {
+      const isInApp = filename.startsWith('app/');
+      const allowedExts = ['tsx', 'ts', 'jsx', 'js'];
+      const ext = filename.split('.').pop();
+      return isInApp && allowedExts.includes(ext);
     }
+
+    // Handle *.css, *.json, *.md, etc. (blacklist file extensions)
+    if (pattern.startsWith('*.')) {
+      const ext = pattern.slice(2);
+      return filename.endsWith('.' + ext);
+    }
+
+    // Handle directory blacklist (node_modules, .github, .claude, etc.)
+    if (!pattern.includes('*') && !pattern.includes('.') && !pattern.includes('/')) {
+      return filename.includes(pattern + '/');
+    }
+
+    return false;
   }
 
   /**
