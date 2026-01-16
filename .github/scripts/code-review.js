@@ -30,8 +30,11 @@ function parseAIResponse(content) {
   const lines = content.split('\n');
   let currentSection = null;
   let currentIssue = null;
-  let severityCount = { critical: 0, error: 0, warning: 0 };
+  let severityCount = { critical: 0, error: 0, warning: 0, info: 0 };
   let issueBody = '';
+  let inCodeBlock = false;
+  let currentCodeBlock = [];
+  let codeBlockType = null; // 'bad' or 'good'
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
@@ -40,7 +43,7 @@ function parseAIResponse(content) {
     if (line.startsWith('## ')) {
       currentSection = line.replace('## ', '').replace(/\s*\(共 \d+ 个\)/, '').trim();
       // Skip sections we don't need for inline comments
-      if (currentSection.includes('总体建议') || currentSection.includes('优点')) {
+      if (currentSection.includes('总体建议') || currentSection.includes('优点') || currentSection.includes('审查摘要')) {
         currentSection = null;
       }
       continue;
@@ -51,21 +54,60 @@ function parseAIResponse(content) {
       continue;
     }
 
+    // Detect code blocks
+    if (line.trim().startsWith('```')) {
+      if (!inCodeBlock) {
+        // Starting a code block
+        inCodeBlock = true;
+        currentCodeBlock = [];
+        // Detect code block type from previous line
+        if (i > 0 && lines[i - 1].includes('错误代码')) {
+          codeBlockType = 'bad';
+        } else if (i > 0 && lines[i - 1].includes('正确代码')) {
+          codeBlockType = 'good';
+        }
+      } else {
+        // Ending a code block
+        inCodeBlock = false;
+        const codeContent = currentCodeBlock.join('\n');
+        if (currentIssue && codeBlockType) {
+          if (codeBlockType === 'bad') {
+            currentIssue.badCode = codeContent;
+          } else if (codeBlockType === 'good') {
+            currentIssue.goodCode = codeContent;
+          }
+        }
+        currentCodeBlock = [];
+        codeBlockType = null;
+      }
+      continue;
+    }
+
+    // Collect code block content
+    if (inCodeBlock && currentIssue) {
+      currentCodeBlock.push(line);
+      continue;
+    }
+
     // Detect issue headers
     const issueMatch = line.match(/###\s*\[?([^\]]+)\]?\s*(.+)/);
     if (issueMatch) {
       // Save previous issue if exists
       if (currentIssue && currentIssue.file) {
-        review.comments.push(currentIssue);
+        review.comments.push(buildIssueComment(currentIssue));
       }
 
-      const severity = issueMatch[1].toLowerCase();
+      const severity = mapSeverity(issueMatch[1].toLowerCase());
       currentIssue = {
         severity,
         title: issueMatch[2].trim(),
         file: null,
         line: null,
-        body: ''
+        body: '',
+        problem: '',
+        badCode: '',
+        goodCode: '',
+        reason: ''
       };
       severityCount[severity] = (severityCount[severity] || 0) + 1;
       continue;
@@ -73,14 +115,34 @@ function parseAIResponse(content) {
 
     // Detect issue properties
     if (currentIssue) {
-      const fileLineMatch = line.match(/\*\*位置\*:\s*([^\s:]+):(\d+)/);
+      // Extract file:line position
+      const fileLineMatch = line.match(/\*\*位置\**:\s*`?([^\s`:]+):(\d+)`?/);
       if (fileLineMatch) {
         currentIssue.file = fileLineMatch[1];
         currentIssue.line = parseInt(fileLineMatch[2], 10);
+        continue;
       }
 
-      // Build the issue body (excluding the position line since it goes in inline comment)
-      if (!line.includes('**位置**:') && line.trim() !== '') {
+      // Extract problem description
+      if (line.startsWith('- **问题**:') || line.startsWith('**问题**:')) {
+        currentIssue.problem = line.replace(/^-?\s*\*\*问题\**:\s*/, '').trim();
+        continue;
+      }
+
+      // Extract reasoning
+      if (line.startsWith('**理由**:') || line.startsWith('**理由**:')) {
+        currentIssue.reason = line.replace(/^\*\*理由\**:\s*/, '').trim();
+        continue;
+      }
+
+      // Build the issue body (excluding specific fields we've extracted)
+      if (!line.includes('**位置**') &&
+          !line.includes('**问题**') &&
+          !line.includes('**理由**') &&
+          !line.includes('❌ 错误代码') &&
+          !line.includes('✅ 正确代码') &&
+          line.trim() !== '' &&
+          !line.startsWith('---')) {
         if (issueBody) {
           issueBody += '\n' + line;
         } else {
@@ -89,9 +151,9 @@ function parseAIResponse(content) {
         currentIssue.body = issueBody;
       }
 
-      // End of issue when hitting blank line or next section
-      if (line.trim() === '' && currentIssue.file) {
-        review.comments.push(currentIssue);
+      // End of issue when hitting separator
+      if (line.startsWith('---') && currentIssue.file) {
+        review.comments.push(buildIssueComment(currentIssue));
         currentIssue = null;
         issueBody = '';
       }
@@ -100,11 +162,10 @@ function parseAIResponse(content) {
 
   // Don't forget the last issue
   if (currentIssue && currentIssue.file) {
-    review.comments.push(currentIssue);
+    review.comments.push(buildIssueComment(currentIssue));
   }
 
   // Determine review event based on severity
-  // Note: GitHub Actions cannot approve PRs, only use COMMENT or REQUEST_CHANGES
   if (severityCount.critical > 0 || severityCount.error > 0) {
     review.event = 'REQUEST_CHANGES';
   } else {
@@ -115,6 +176,58 @@ function parseAIResponse(content) {
   review.body = buildReviewBody(content);
 
   return review;
+}
+
+/**
+ * Map severity string to standard value
+ * @param {string} severity - Severity from AI
+ * @returns {string} Mapped severity
+ */
+function mapSeverity(severity) {
+  const mapping = {
+    'critical': 'critical',
+    'error': 'error',
+    'warning': 'warning',
+    'info': 'info',
+    '严重': 'critical',
+    '错误': 'error',
+    '警告': 'warning',
+    '信息': 'info'
+  };
+  return mapping[severity] || 'info';
+}
+
+/**
+ * Build formatted issue comment
+ * @param {Object} issue - Issue object
+ * @returns {Object} Formatted comment
+ */
+function buildIssueComment(issue) {
+  let body = `**${issue.title}**\n\n`;
+
+  if (issue.problem) {
+    body += `**问题**: ${issue.problem}\n\n`;
+  }
+
+  if (issue.badCode) {
+    body += `**❌ 错误代码**:\n\`\`\`tsx\n${issue.badCode}\n\`\`\`\n\n`;
+  }
+
+  if (issue.goodCode) {
+    body += `**✅ 正确代码**:\n\`\`\`tsx\n${issue.goodCode}\n\`\`\`\n\n`;
+  }
+
+  if (issue.reason) {
+    body += `**理由**: ${issue.reason}`;
+  }
+
+  return {
+    severity: issue.severity,
+    title: issue.title,
+    file: issue.file,
+    line: issue.line,
+    body: body.trim()
+  };
 }
 
 /**
