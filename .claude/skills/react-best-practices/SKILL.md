@@ -5,7 +5,7 @@ description: React and Next.js performance optimization guidelines from Vercel E
 
 # Vercel React Best Practices
 
-Comprehensive performance optimization guide for React and Next.js applications, maintained by Vercel. Contains 45 rules across 8 categories, prioritized by impact to guide automated refactoring and code generation.
+Comprehensive performance optimization guide for React and Next.js applications, maintained by Vercel. Contains 47 rules across 8 categories, prioritized by impact to guide automated refactoring and code generation.
 
 ## When to Apply
 
@@ -88,10 +88,12 @@ Reference these guidelines when:
 - `js-cache-function-results` - Cache function results in module-level Map
 - `js-cache-storage` - Cache localStorage/sessionStorage reads
 - `js-combine-iterations` - Combine multiple filter/map into one loop
-- `js-length-check-first` - Check array length before expensive comparison
 - `js-early-exit` - Return early from functions
 - `js-hoist-regexp` - Hoist RegExp creation outside loops
+- `js-length-check-first` - Check array length before expensive comparison
 - `js-min-max-loop` - Use loop for min/max instead of sort
+- `js-no-inline-styles` - Use Tailwind classes instead of inline styles
+- `js-no-emojis` - Use icon libraries instead of emojis
 - `js-set-map-lookups` - Use Set/Map for O(1) lookups
 - `js-tosorted-immutable` - Use toSorted() for immutability
 
