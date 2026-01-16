@@ -1,4 +1,5 @@
 const { TokenEstimator } = require('./token-estimator');
+const { minimatch } = require('minimatch');
 
 /**
  * PR Compressor
@@ -79,27 +80,18 @@ class PRCompressor {
   }
 
   /**
-   * Simple glob pattern matching
-   * @param {string} pattern - Glob pattern
+   * Glob pattern matching using minimatch
+   * @param {string} pattern - Glob pattern to match
    * @param {string} filename - File path to test
    * @returns {boolean} Whether the file matches the pattern
    */
   globMatch(pattern, filename) {
-    // Convert glob pattern to regex
-    let regexPattern = pattern
-      // Escape special regex characters except *, ?, {, }
-      .replace(/[.+^${}()|[\]\\]/g, '\\$&')
-      // Convert ** to any path
-      .replace(/\*\*/g, '.*')
-      // Convert * to any non-slash characters
-      .replace(/(?<!\.)\*/g, '[^/]*')
-      // Convert {a,b} to (a|b)
-      .replace(/\{([^}]+)\}/g, '($1)')
-      // Ensure pattern matches the entire string
-      .replace(/^/, '^')
-      .replace(/$/, '$');
-
-    return new RegExp(regexPattern).test(filename);
+    try {
+      return minimatch(filename, pattern);
+    } catch (error) {
+      console.warn(`Invalid glob pattern: ${pattern}`, error.message);
+      return false;
+    }
   }
 
   /**
