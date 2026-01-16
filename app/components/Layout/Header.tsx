@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { Rocket } from 'lucide-react'
 import { LanguageSwitcher } from './LanguageSwitcher'
 import type { NavigationItem } from '@nextjs-ctf-demo/contentful-bff'
 
@@ -10,14 +11,14 @@ export function Header({
   lang: string
 }) {
   return (
-    <header className="border-b bg-white dark:bg-gray-900 sticky top-0 z-50" style={{ top: 'env(safe-area-inset-top, 0px)' }}>
+    <header className="border-b bg-white dark:bg-gray-900 sticky top-0 z-50 sticky-header-safe">
       <nav className="container mx-auto px-4 py-4 flex items-center justify-between" aria-label="Main navigation">
         <Link
           href={`/${lang}`}
           className="font-bold text-xl flex items-center gap-2 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
           aria-label="Home"
         >
-          <span aria-hidden="true">🚀</span>
+          <Rocket className="w-5 h-5" aria-hidden="true" />
           <span className="hidden md:inline">Demo Company</span>
         </Link>
 

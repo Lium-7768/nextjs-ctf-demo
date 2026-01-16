@@ -38,6 +38,16 @@ a,
   -webkit-tap-highlight-color: color-mix(in srgb, currentColor 15%, transparent);
 }
 
+/* Safe area inset for sticky header */
+.sticky-header-safe {
+  top: env(safe-area-inset-top, 0px);
+}
+
+/* Scroll margin for main content */
+.main-content-scroll-margin {
+  scroll-margin-top: calc(4rem + env(safe-area-inset-top, 0px));
+}
+
 /* Respect user's motion preferences */
 @media (prefers-reduced-motion: reduce) {
   *,

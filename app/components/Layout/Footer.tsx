@@ -1,5 +1,6 @@
 import type { GlobalSettings } from '@nextjs-ctf-demo/contentful-bff'
 import Link from 'next/link'
+import { Mail, Phone, MapPin } from 'lucide-react'
 
 export function Footer({
   settings,
@@ -21,19 +22,19 @@ export function Footer({
             </p>
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                <span aria-hidden="true">📧</span>
+                <Mail className="w-4 h-4" aria-hidden="true" />
                 <a href={`mailto:${settings?.fields.email}`} className="hover:text-blue-600 dark:hover:text-blue-400 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500">
                   {settings?.fields.email}
                 </a>
               </div>
               <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                <span aria-hidden="true">📱</span>
+                <Phone className="w-4 h-4" aria-hidden="true" />
                 <a href={`tel:${settings?.fields.phone}`} className="hover:text-blue-600 dark:hover:text-blue-400 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500">
                   {settings?.fields.phone}
                 </a>
               </div>
               <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                <span aria-hidden="true">📍</span>
+                <MapPin className="w-4 h-4" aria-hidden="true" />
                 <span>{settings?.fields.address}</span>
               </div>
             </div>

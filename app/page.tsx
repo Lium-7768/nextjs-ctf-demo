@@ -1,3 +1,5 @@
+import { CheckCircle2 } from 'lucide-react'
+
 export default function Home() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
@@ -6,11 +8,18 @@ export default function Home() {
           Next.js CTF Demo
         </h1>
         <p className="mt-4 text-lg text-zinc-600 dark:text-zinc-400">
-          ✅ shadcn/ui configured
-          <br />
-          ✅ React Query configured
-          <br />
-          ✅ Contentful configured
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" aria-hidden="true" />
+            <span>shadcn/ui configured</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" aria-hidden="true" />
+            <span>React Query configured</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" aria-hidden="true" />
+            <span>Contentful configured</span>
+          </div>
         </p>
       </main>
     </div>
