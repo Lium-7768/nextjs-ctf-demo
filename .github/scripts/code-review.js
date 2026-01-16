@@ -231,40 +231,13 @@ function buildIssueComment(issue) {
 }
 
 /**
- * Build review body - only include 总体建议 section, otherwise return empty
+ * Build review body - always return empty (no summary comment wanted)
  * @param {string} originalContent - Original AI content
- * @returns {string} Review body
+ * @returns {string} Empty string
  */
 function buildReviewBody(originalContent) {
-  const lines = originalContent.split('\n');
-  const result = [];
-  let inOverallSection = false;
-
-  for (const line of lines) {
-    // Look for 总体建议 section
-    if (line.includes('总体建议')) {
-      inOverallSection = true;
-      result.push(line);
-      continue;
-    }
-
-    if (inOverallSection) {
-      result.push(line);
-    }
-  }
-
-  // If no real 总体建议 content, return empty string (no summary comment)
-  if (result.length === 0) {
-    return '';
-  }
-
-  // Only return if there's actual content beyond the header
-  const content = result.join('\n').trim();
-  if (content === '总体建议' || content.length < 20) {
-    return '';
-  }
-
-  return content;
+  // Always return empty - user only wants inline comments, no summary
+  return '';
 }
 
 /**
