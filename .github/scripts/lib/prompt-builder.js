@@ -182,7 +182,16 @@ class PromptBuilder {
       return section;
     }
 
-    section += '**重要**: 报告问题时，只引用 diff 中以 `+` 开头的**新增行**。\n\n';
+    section += '**⚠️ 行号计数规则（非常重要）**:\n';
+    section += '```diff\n';
+    section += '  line 1    <- 普通行，不计入\n';
+    section += '+ added 1  <- 这是第 1 个新增行，报告 file.ts:1\n';
+    section += '  line 2    <- 普通行，不计入\n';
+    section += '- removed   <- 删除行，不计入\n';
+    section += '+ added 2  <- 这是第 2 个新增行，报告 file.ts:2\n';
+    section += '+ added 3  <- 这是第 3 个新增行，报告 file.ts:3\n';
+    section += '```\n\n';
+    section += '**只计算以 + 开头的行，从 1 开始计数**。\n\n';
 
     compressedPR.files.forEach((file, index) => {
       section += `## ${index + 1}. ${file.filename}\n\n`;
