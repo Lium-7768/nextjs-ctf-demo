@@ -8,6 +8,7 @@ export async function getPageBySlug(slug: string, locale: string): Promise<Page 
         content_type: 'page',
         locale: locale,
         limit: 100,
+        include: 5,
       })
       // 查找 slug 为空的页面
       return (entries.items.find(page => !page.fields.slug || page.fields.slug === '') || null) as unknown as Page | null
@@ -18,6 +19,7 @@ export async function getPageBySlug(slug: string, locale: string): Promise<Page 
       content_type: 'page',
       locale: locale,
       limit: 1,
+      include: 5,
     }
     query['fields.slug'] = slug
 

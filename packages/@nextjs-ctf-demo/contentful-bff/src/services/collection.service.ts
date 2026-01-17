@@ -19,7 +19,7 @@ export async function getFeatures(locale: string): Promise<Feature[]> {
 export async function getServices(locale: string): Promise<Service[]> {
   try {
     const entries = await contentfulClient.getEntries({
-      content_type: 'service',
+      content_type: '1SecTQGuL1nS6pYpKE8icg', // Service Content Type ID
       locale: locale,
       order: ['fields.order'],
     })
@@ -49,7 +49,7 @@ export async function getTestimonials(locale: string): Promise<Testimonial[]> {
 export async function getPricingPlans(locale: string): Promise<PricingPlan[]> {
   try {
     const entries = await contentfulClient.getEntries({
-      content_type: 'pricingPlan',
+      content_type: '2BwR3WngnZVreDna6tzn5p', // Pricing Plan Content Type ID
       locale: locale,
       order: ['fields.order'],
     })
@@ -68,7 +68,7 @@ export async function getFAQs(locale: string, category?: string): Promise<FAQEnt
       locale: locale,
       order: ['fields.order'],
     }
-    
+
     if (category) {
       query['fields.category'] = category
     }

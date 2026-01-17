@@ -14,7 +14,7 @@ export function Header({
   lang: string
 }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  
+
   // Use useCallback to create stable callback references
   const toggleMobileMenu = useCallback(() => {
     setIsMobileMenuOpen(prev => !prev)
@@ -52,7 +52,7 @@ export function Header({
 
         <div className="flex items-center gap-4">
           <LanguageSwitcher />
-          
+
           {/* Mobile Menu Button */}
           <button
             onClick={toggleMobileMenu}
@@ -70,7 +70,7 @@ export function Header({
       </nav>
 
       {/* Mobile Menu */}
-      {isMobileMenuOpen && (
+      {isMobileMenuOpen ? (
         <div className="md:hidden glass border-t border-gray-200 dark:border-gray-700 animate-fadeInUp">
           <ul className="container mx-auto px-4 py-4 space-y-2">
             {navItems.map((item) => (
@@ -86,7 +86,7 @@ export function Header({
             ))}
           </ul>
         </div>
-      )}
+      ) : null}
     </header>
   )
 }
