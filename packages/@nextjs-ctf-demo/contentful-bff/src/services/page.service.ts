@@ -4,7 +4,7 @@ export async function getPageBySlug(slug: string, locale: string): Promise<Page 
   try {
     // 对于空 slug（主页），查询所有页面然后在客户端过滤
     if (slug === '') {
-      const entries = await contentfulClient.getEntries<any>({
+      const entries = await contentfulClient.getEntries({
         content_type: 'page',
         locale: locale,
         limit: 100,
@@ -14,14 +14,14 @@ export async function getPageBySlug(slug: string, locale: string): Promise<Page 
     }
 
     // 对于非空 slug，使用标准查询
-    const query: any = {
+    const query: Record<string, unknown> = {
       content_type: 'page',
       locale: locale,
       limit: 1,
     }
-    query[`fields.slug`] = slug
+    query['fields.slug'] = slug
 
-    const entries = await contentfulClient.getEntries<any>(query)
+    const entries = await contentfulClient.getEntries(query)
 
     return (entries.items[0] || null) as unknown as Page | null
   } catch (error) {
@@ -32,11 +32,11 @@ export async function getPageBySlug(slug: string, locale: string): Promise<Page 
 
 export async function getAllPages(locale: string): Promise<Page[]> {
   try {
-    const entries = await contentfulClient.getEntries<any>({
+    const entries = await contentfulClient.getEntries({
       content_type: 'page',
       locale: locale,
       order: ['fields.publishedAt'],
-    } as any)
+    })
 
     return entries.items as unknown as Page[]
   } catch (error) {

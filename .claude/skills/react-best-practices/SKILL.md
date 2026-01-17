@@ -1,11 +1,15 @@
 ---
 name: vercel-react-best-practices
 description: React and Next.js performance optimization guidelines from Vercel Engineering. This skill should be used when writing, reviewing, or refactoring React/Next.js code to ensure optimal performance patterns. Triggers on tasks involving React components, Next.js pages, data fetching, bundle optimization, or performance improvements.
+license: MIT
+metadata:
+  author: vercel
+  version: "1.0.0"
 ---
 
 # Vercel React Best Practices
 
-Comprehensive performance optimization guide for React and Next.js applications, maintained by Vercel. Contains 47 rules across 8 categories, prioritized by impact to guide automated refactoring and code generation.
+Comprehensive performance optimization guide for React and Next.js applications, maintained by Vercel. Contains 45 rules across 8 categories, prioritized by impact to guide automated refactoring and code generation.
 
 ## When to Apply
 
@@ -63,7 +67,7 @@ Reference these guidelines when:
 ### 5. Re-render Optimization (MEDIUM)
 
 - `rerender-defer-reads` - Don't subscribe to state only used in callbacks
-- `rerender-memo` - Extract expensive work into memoized components
+- `rerender-memo` - Use React.memo for components with stable props to prevent unnecessary re-renders
 - `rerender-dependencies` - Use primitive dependencies in effects
 - `rerender-derived-state` - Subscribe to derived booleans, not raw values
 - `rerender-functional-setstate` - Use functional setState for stable callbacks
@@ -88,12 +92,10 @@ Reference these guidelines when:
 - `js-cache-function-results` - Cache function results in module-level Map
 - `js-cache-storage` - Cache localStorage/sessionStorage reads
 - `js-combine-iterations` - Combine multiple filter/map into one loop
+- `js-length-check-first` - Check array length before expensive comparison
 - `js-early-exit` - Return early from functions
 - `js-hoist-regexp` - Hoist RegExp creation outside loops
-- `js-length-check-first` - Check array length before expensive comparison
 - `js-min-max-loop` - Use loop for min/max instead of sort
-- `js-no-inline-styles` - Use Tailwind classes instead of inline styles
-- `js-no-emojis` - Use icon libraries instead of emojis
 - `js-set-map-lookups` - Use Set/Map for O(1) lookups
 - `js-tosorted-immutable` - Use toSorted() for immutability
 

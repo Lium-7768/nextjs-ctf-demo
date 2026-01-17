@@ -1,4 +1,13 @@
-import { HeroSection, ContentSection } from '@/app/components/Sections'
+import {
+  HeroSection,
+  ContentSection,
+  FeaturesSection,
+  TestimonialsSection,
+  CTASection,
+  ServicesSection,
+  PricingSection,
+  FAQSection,
+} from '@/app/components/Sections'
 import type { Page } from '@nextjs-ctf-demo/contentful-bff'
 
 export function HomeTemplate({
@@ -24,6 +33,18 @@ function getSectionComponent(type: string) {
       return HeroSection
     case 'content':
       return ContentSection
+    case 'features':
+      return FeaturesSection
+    case 'testimonials':
+      return TestimonialsSection
+    case 'cta':
+      return CTASection
+    case 'services':
+      return ServicesSection
+    case 'pricing':
+      return PricingSection
+    case 'faq':
+      return FAQSection
     default:
       return ContentSection
   }

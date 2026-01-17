@@ -2,7 +2,7 @@ import { contentfulClient, type Section } from '../client'
 
 export async function getSections(sectionIds?: string[], locale?: string): Promise<Section[]> {
   try {
-    const query: any = {
+    const query: Record<string, unknown> = {
       content_type: 'section',
       order: ['fields.order'],
     }
@@ -15,7 +15,7 @@ export async function getSections(sectionIds?: string[], locale?: string): Promi
       query.locale = locale
     }
 
-    const entries = await contentfulClient.getEntries<any>(query)
+    const entries = await contentfulClient.getEntries(query)
 
     return entries.items as unknown as Section[]
   } catch (error) {

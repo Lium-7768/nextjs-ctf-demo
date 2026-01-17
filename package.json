@@ -11,7 +11,9 @@
     "start": "next start",
     "lint": "eslint",
     "lint:fix": "eslint --fix",
-    "sync-skills": "node .github/scripts/sync-skills-to-review.js"
+    "sync-skills": "node .github/scripts/sync-skills-to-review.js",
+    "setup-contentful": "node packages/@nextjs-ctf-demo/contentful-setup/src/setup.js",
+    "seed-contentful": "node packages/@nextjs-ctf-demo/contentful-setup/src/seed.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.1",
@@ -35,6 +37,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "contentful-management": "^11.30.2",
     "eslint": "^9",
     "eslint-config-next": "16.1.1",
     "tailwindcss": "^4",

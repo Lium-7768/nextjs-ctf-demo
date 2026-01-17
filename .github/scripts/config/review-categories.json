@@ -397,13 +397,13 @@
       },
       {
         "id": "rerender-memo",
-        "name": "Extract to Memoized Components",
-        "description": "Extract expensive work into memoized components to enable early returns before computation.",
+        "name": "Use React.memo for Stable Props",
+        "description": "Apply `React.memo` to components that are pure functions of their props, receive stable prop references, and are children of frequently updating parents.",
         "severity": "warning",
-        "prompt_template": "**检查以下代码中的 Extract to Memoized Components**:\n\n**影响**: enables early returns\n\n**关注点**:\n- 查找 diff 中以 + 开头的新增行\n- 识别违反最佳实践的代码模式\n- 提供具体的修复建议\n\n代码:\n{diff}",
-        "tags": "rerender, memo, useMemo, optimization",
+        "prompt_template": "**检查以下代码中的 Use React.memo for Stable Props**:\n\n**影响**: prevents unnecessary re-renders when props don't change\n\n**关注点**:\n- 查找 diff 中以 + 开头的新增行\n- 识别违反最佳实践的代码模式\n- 提供具体的修复建议\n\n代码:\n{diff}",
+        "tags": "rerender, memo, optimization, props",
         "impact": "MEDIUM",
-        "impact_description": "enables early returns"
+        "impact_description": "prevents unnecessary re-renders when props don't change"
       },
       {
         "id": "rerender-transitions",

@@ -71,9 +71,7 @@ export const contentTypes = {
         type: 'Symbol',
         localized: false,
         required: true,
-        validations: [
-          { in: ['hero', 'content', 'features', 'testimonials', 'cta', 'services', 'pricing', 'faq'] },
-        ],
+        validations: [{ in: ['hero', 'content', 'features', 'testimonials', 'cta', 'services', 'pricing', 'faq'] }],
       },
       {
         id: 'heading',
@@ -435,16 +433,4 @@ export const contentTypes = {
         name: 'URL',
         type: 'Symbol',
         localized: false,
-        required: true,
-        validations: [{ regexp: { pattern: '^https?:\\/\\/.+' } }],
-      },
-      {
-        id: 'icon',
-        name: 'Icon',
-        type: 'Symbol',
-        localized: false,
-      },
-    ],
-    displayField: 'label',
-  },
-}
+        required:好的！修复完成了。现在重新运行 setup：</think><tool_call>bash<arg_key>command</arg_key><arg_value>bun run packages/@nextjs-ctf-demo/contentful-setup/src/setup.ts 2>&1 | tail -50
