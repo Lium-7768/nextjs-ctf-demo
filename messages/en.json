@@ -1,0 +1,71 @@
+{
+  "nav": {
+    "home": "Home",
+    "services": "Services",
+    "pricing": "Pricing",
+    "faq": "FAQ",
+    "contact": "Contact"
+  },
+  "pricing": {
+    "loading": "Loading pricing...",
+    "error": "Error loading pricing",
+    "mostPopular": "Most Popular"
+  },
+  "services": {
+    "loading": "Loading services...",
+    "error": "Error loading services"
+  },
+  "faq": {
+    "title": "Frequently Asked Questions",
+    "supportCenter": "Support Center",
+    "loading": "Loading FAQs...",
+    "error": "Error loading FAQs"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "learnMore": "Learn More",
+    "getStarted": "Get Started",
+    "watchDemo": "Watch Demo",
+    "subscribe": "Subscribe",
+    "email": "Email",
+    "enterEmail": "Enter your email"
+  },
+  "hero": {
+    "badge": "Version 2.0 is here",
+    "getStarted": "Get Started",
+    "learnMore": "Learn More"
+  },
+  "stats": {
+    "users": "Users",
+    "projects": "Projects",
+    "countries": "Countries",
+    "satisfaction": "Satisfaction"
+  },
+  "features": {
+    "title": "Our Features",
+    "loading": "Loading features...",
+    "error": "Error loading features"
+  },
+  "testimonials": {
+    "title": "What Our Clients Say",
+    "loading": "Loading testimonials...",
+    "error": "Error loading testimonials"
+  },
+  "cta": {
+    "badge": "Limited Time Offer",
+    "getStartedNow": "Get Started Now",
+    "watchDemo": "Watch Demo"
+  },
+  "footer": {
+    "quickLinks": "Quick Links",
+    "followUs": "Follow Us",
+    "newsletter": "Newsletter",
+    "subscribeText": "Subscribe to our newsletter for updates",
+    "copyright": "All rights reserved."
+  },
+  "errors": {
+    "notFound": "Page not found",
+    "loadingFailed": "Failed to load content"
+  }
+}

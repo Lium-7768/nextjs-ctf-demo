@@ -1,7 +1,8 @@
 import { createClient, type ContentfulClientApi } from 'contentful'
 
-const space = process.env.CONTENTFUL_SPACE_ID
-const accessToken = process.env.CONTENTFUL_ACCESS_TOKEN
+// Use NEXT_PUBLIC_ prefix for client-side access, fallback to server-side env vars
+const space = process.env.NEXT_PUBLIC_CONTENTFUL_SPACE_ID || process.env.CONTENTFUL_SPACE_ID
+const accessToken = process.env.NEXT_PUBLIC_CONTENTFUL_ACCESS_TOKEN || process.env.CONTENTFUL_ACCESS_TOKEN
 
 export const contentfulClient: ContentfulClientApi<undefined> = createClient({
   space: space || '',

@@ -1,0 +1,71 @@
+{
+  "nav": {
+    "home": "首页",
+    "services": "服务",
+    "pricing": "价格",
+    "faq": "常见问题",
+    "contact": "联系我们"
+  },
+  "pricing": {
+    "loading": "正在加载价格...",
+    "error": "加载价格失败",
+    "mostPopular": "最受欢迎"
+  },
+  "services": {
+    "loading": "正在加载服务...",
+    "error": "加载服务失败"
+  },
+  "faq": {
+    "title": "常见问题",
+    "supportCenter": "帮助中心",
+    "loading": "正在加载常见问题...",
+    "error": "加载常见问题失败"
+  },
+  "common": {
+    "loading": "加载中...",
+    "error": "发生错误",
+    "learnMore": "了解更多",
+    "getStarted": "立即开始",
+    "watchDemo": "观看演示",
+    "subscribe": "订阅",
+    "email": "邮箱",
+    "enterEmail": "输入您的邮箱"
+  },
+  "hero": {
+    "badge": "2.0 版本已发布",
+    "getStarted": "立即开始",
+    "learnMore": "了解更多"
+  },
+  "stats": {
+    "users": "用户",
+    "projects": "项目",
+    "countries": "国家",
+    "satisfaction": "满意度"
+  },
+  "features": {
+    "title": "我们的特性",
+    "loading": "加载特性中...",
+    "error": "加载特性失败"
+  },
+  "testimonials": {
+    "title": "客户评价",
+    "loading": "加载评价中...",
+    "error": "加载评价失败"
+  },
+  "cta": {
+    "badge": "限时优惠",
+    "getStartedNow": "立即开始",
+    "watchDemo": "观看演示"
+  },
+  "footer": {
+    "quickLinks": "快速链接",
+    "followUs": "关注我们",
+    "newsletter": "订阅通讯",
+    "subscribeText": "订阅我们的通讯以获取最新动态",
+    "copyright": "版权所有。"
+  },
+  "errors": {
+    "notFound": "页面未找到",
+    "loadingFailed": "内容加载失败"
+  }
+}

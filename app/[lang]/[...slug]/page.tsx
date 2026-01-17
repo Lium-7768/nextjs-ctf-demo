@@ -1,18 +1,23 @@
-import { getPageBySlug } from '@nextjs-ctf-demo/contentful-bff'
+import { getPageBySlug, getAllPages } from '@nextjs-ctf-demo/contentful-bff'
+import { setRequestLocale } from 'next-intl/server'
 import { notFound } from 'next/navigation'
 import { HomeTemplate, PageTemplate } from '@/app/components/Templates'
-import { ServicesSection } from '@/app/components/Sections'
+import { routing } from '@/app/i18n/routing'
 
-export const dynamic = 'force-dynamic'
-
+// Generate static params for all pages and locales
 export async function generateStaticParams() {
-  // 在 build 时生成所有页面的静态路径
-  return [
-    { slug: [] }, // 主页
-    { slug: ['services'] }, // Services 页
-    { slug: ['pricing'] }, // Pricing 页
-    { slug: ['faq'] }, // FAQ 页
-  ]
+  const pages = await getAllPages('en-US')
+  const paths: { lang: string; slug: string[] }[] = []
+
+  for (const locale of routing.locales) {
+    for (const page of pages) {
+      if (page.fields.slug) {
+        paths.push({ lang: locale, slug: [page.fields.slug] })
+      }
+    }
+  }
+
+  return paths
 }
 
 export default async function CatchAllPage({
@@ -21,62 +26,30 @@ export default async function CatchAllPage({
   params: Promise<{ lang: string; slug?: string[] }>
 }) {
   const { lang, slug = [] } = await params
-  const locale = lang === 'zh' ? 'zh-CN' : 'en-US'
 
-  // 将 slug 数组转换为路径字符串
+  // Enable static rendering
+  setRequestLocale(lang)
+
+  const { getContentfulLocale } = await import('@/app/i18n/locale')
+  const contentfulLocale = getContentfulLocale(lang)
+
+  // Convert slug array to path string
   const slugPath = slug.join('/')
 
-  // 从 Contentful 获取页面
-  const page = await getPageBySlug(slugPath, locale)
+  // Fetch page from Contentful
+  const page = await getPageBySlug(slugPath, contentfulLocale)
 
   if (!page) {
     notFound()
   }
 
-  // 根据模板类型选择渲染器
-  const template = page.fields.template || 'default'
-
-  switch (template) {
-    case 'home':
-      return <HomeTemplate page={page} lang={lang} />
-    case 'services':
-      return <ServicesSection section={page.fields.sections[0]} lang={lang} />
-    case 'pricing':
-      return <PageTemplate page={page} lang={lang} />
-    case 'faq':
-      return <PageTemplate page={page} lang={lang} />
-    case 'default':
-      return <PageTemplate page={page} lang={lang} />
-  }
-}
-
-export default async function CatchAllPage({
-  params,
-}: {
-  params: Promise<{ lang: string; slug?: string[] }>
-}) {
-  const { lang, slug = [] } = await params
-  const locale = lang === 'zh' ? 'zh-CN' : 'en-US'
-
-  // 将 slug 数组转换为路径字符串
-  const slugPath = slug.join('/')
-
-  // 从 Contentful 获取页面
-  const page = await getPageBySlug(slugPath, locale)
-
-  if (!page) {
-    notFound()
-  }
-
-  // 根据模板类型选择渲染器
-  const template = page.fields.template || 'default'
+  // Select renderer based on template type
+  const template = (page.fields.template || 'default') as string
 
   switch (template) {
     case 'home':
       return <HomeTemplate page={page} lang={lang} />
     case 'default':
-    case 'products':
-    case 'news':
     default:
       return <PageTemplate page={page} lang={lang} />
   }

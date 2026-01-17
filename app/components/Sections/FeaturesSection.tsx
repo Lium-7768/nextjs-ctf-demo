@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { renderRichText } from "@nextjs-ctf-demo/contentful-bff/rich-text";
 import type { Section } from "@nextjs-ctf-demo/contentful-bff";
 import { Zap, Shield, Users, Globe, Target, TrendingUp } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 const featureIcons = {
   speed: Zap,
@@ -21,6 +22,7 @@ export function FeaturesSection({
   section: Section;
   lang?: string;
 }) {
+  const t = useTranslations("features");
   const {
     data: features,
     isLoading,
@@ -29,22 +31,24 @@ export function FeaturesSection({
     queryKey: ["features", lang],
     queryFn: async () => {
       const { getFeatures } = await import("@nextjs-ctf-demo/contentful-bff");
-      return getFeatures(lang || "zh");
+      const { getContentfulLocale } = await import("@/app/i18n/locale");
+      const locale = getContentfulLocale(lang || 'en');
+      return getFeatures(locale);
     },
   });
 
-  if (isLoading) return <div className="py-24 px-4">Loading features...</div>;
+  if (isLoading) return <div className="py-24 px-4">{t('loading')}</div>;
   if (error)
     return (
-      <div className="py-24 px-4 text-red-600">Error loading features</div>
+      <div className="py-24 px-4 text-red-600">{t('error')}</div>
     );
   if (!features || features.length === 0) return null;
 
   return (
     <section className="py-24 px-4 bg-white dark:bg-gray-900">
       <div className="container mx-auto">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-gray-100 mb-6 font-poppins">
+        <div className="text-center mb-16 px-4">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 dark:text-gray-100 mb-6 font-poppins">
             {section.fields.heading}
           </h2>
           <div className="prose prose-lg max-w-3xl mx-auto text-gray-600 dark:text-gray-400">
@@ -52,7 +56,7 @@ export function FeaturesSection({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 px-4">
           {features.map((feature) => {
             const Icon =
               featureIcons[feature.fields.icon as keyof typeof featureIcons] ||
@@ -60,9 +64,9 @@ export function FeaturesSection({
             return (
               <div
                 key={feature.sys.id}
-                className="glass-card p-8 hover:scale-105 cursor-pointer group"
+                className="glass-card p-8 hover:scale-[1.02] cursor-pointer group hover:border-blue-500/30 transition-all duration-300"
               >
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform shadow-lg">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center mb-6 group-hover:rotate-6 transition-transform shadow-xl">
                   <Icon className="w-7 h-7 text-white" aria-hidden="true" />
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4 font-poppins">

@@ -1,8 +1,12 @@
 import { getPageBySlug } from '@nextjs-ctf-demo/contentful-bff'
+import { setRequestLocale } from 'next-intl/server'
 import { notFound } from 'next/navigation'
 import { HomeTemplate, PageTemplate } from '@/app/components/Templates'
+import { routing, type Locale } from '@/app/i18n/routing'
 
-export const dynamic = 'force-dynamic'
+export function generateStaticParams() {
+  return routing.locales.map((locale) => ({ lang: locale }))
+}
 
 export default async function LangPage({
   params,
@@ -10,10 +14,15 @@ export default async function LangPage({
   params: Promise<{ lang: string }>
 }) {
   const { lang } = await params
-  const locale = lang === 'zh' ? 'zh-CN' : 'en-US'
+
+  // Enable static rendering
+  setRequestLocale(lang)
+
+  const { getContentfulLocale } = await import('@/app/i18n/locale')
+  const contentfulLocale = getContentfulLocale(lang)
 
   // 从 Contentful 获取主页 (slug = '')
-  const page = await getPageBySlug('', locale)
+  const page = await getPageBySlug('', contentfulLocale)
 
   if (!page) {
     notFound()

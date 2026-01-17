@@ -1,6 +1,7 @@
 import type { GlobalSettings } from '@nextjs-ctf-demo/contentful-bff'
 import Link from 'next/link'
 import { Mail, Phone, MapPin, Github, Twitter, Linkedin, Facebook } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
 export function Footer({
   settings,
@@ -9,6 +10,10 @@ export function Footer({
   settings: GlobalSettings | null
   lang: string
 }) {
+  const tNav = useTranslations('nav')
+  const tCommon = useTranslations('common')
+  const tFooter = useTranslations('footer')
+
   const socialIcons = {
     github: Github,
     twitter: Twitter,
@@ -17,11 +22,11 @@ export function Footer({
   }
 
   const quickLinks = [
-    { label: 'Home', href: `/${lang}` },
-    { label: 'About', href: `/${lang}/about` },
-    { label: 'Services', href: `/${lang}/services` },
-    { label: 'FAQ', href: `/${lang}/faq` },
-    { label: 'Contact', href: `/${lang}/contact` },
+    { label: tNav('home'), href: `/${lang}` },
+    { label: tNav('services'), href: `/${lang}/services` },
+    { label: tNav('pricing'), href: `/${lang}/pricing` },
+    { label: tNav('faq'), href: `/${lang}/faq` },
+    { label: tNav('contact'), href: `/${lang}/contact` },
   ]
 
   return (
@@ -72,7 +77,7 @@ export function Footer({
           {/* Quick Links */}
           <div className="space-y-6">
             <h3 className="font-semibold text-xl text-gray-900 dark:text-gray-100 font-poppins">
-              Quick Links
+              {tFooter('quickLinks')}
             </h3>
             <nav aria-label="Footer navigation">
               <ul className="space-y-3">
@@ -93,7 +98,7 @@ export function Footer({
           {/* Social Links */}
           <div className="space-y-6">
             <h3 className="font-semibold text-xl text-gray-900 dark:text-gray-100 font-poppins">
-              Follow Us
+              {tFooter('followUs')}
             </h3>
             <div className="flex gap-4">
               {['github', 'twitter', 'linkedin', 'facebook'].map((social) => {
@@ -115,20 +120,20 @@ export function Footer({
           {/* Newsletter */}
           <div className="space-y-6">
             <h3 className="font-semibold text-xl text-gray-900 dark:text-gray-100 font-poppins">
-              Newsletter
+              {tFooter('newsletter')}
             </h3>
             <p className="text-gray-600 dark:text-gray-400">
-              Subscribe to our newsletter for updates
+              {tFooter('subscribeText')}
             </p>
             <div className="flex gap-2">
               <input
                 type="email"
-                placeholder="Enter your email"
+                placeholder={tCommon('enterEmail')}
                 className="flex-1 px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                 aria-label="Email address"
               />
               <button className="px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 text-white font-semibold hover:scale-105 transition-transform cursor-pointer">
-                Subscribe
+                {tCommon('subscribe')}
               </button>
             </div>
           </div>
@@ -140,7 +145,7 @@ export function Footer({
             {settings?.fields.footerText || 'Thank you for visiting our website.'}
           </p>
           <p className="text-xs text-gray-500 dark:text-gray-500">
-            &copy; {new Date().getFullYear()} {settings?.fields.companyName}. All rights reserved.
+            &copy; {new Date().getFullYear()} {settings?.fields.companyName}. {tFooter('copyright')}
           </p>
         </div>
       </div>

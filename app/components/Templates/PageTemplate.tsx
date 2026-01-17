@@ -1,4 +1,13 @@
-import { HeroSection, ContentSection, FeaturesSection, TestimonialsSection, CTASection } from '@/app/components/Sections'
+import {
+  HeroSection,
+  ContentSection,
+  FeaturesSection,
+  TestimonialsSection,
+  CTASection,
+  ServicesSection,
+  PricingSection,
+  FAQSection
+} from '@/app/components/Sections'
 import type { Page } from '@nextjs-ctf-demo/contentful-bff'
 
 export function PageTemplate({
@@ -13,15 +22,15 @@ export function PageTemplate({
 
   return (
     <div>
-      {!hasHero && (
+      {!hasHero ? (
         <div className="bg-white dark:bg-gray-900 py-20">
-          <div className="container mx-auto">
+          <div className="container mx-auto px-4">
             <h1 className="text-5xl font-bold text-gray-900 dark:text-gray-100 mb-8">
               {page.fields.title}
             </h1>
           </div>
         </div>
-      )}
+      ) : null}
 
       {page.fields.sections?.map((section) => {
         const SectionComponent = getSectionComponent(section.fields.type)
@@ -43,6 +52,12 @@ function getSectionComponent(type: string) {
       return TestimonialsSection
     case 'cta':
       return CTASection
+    case 'services':
+      return ServicesSection
+    case 'pricing':
+      return PricingSection
+    case 'faq':
+      return FAQSection
     default:
       return ContentSection
   }
